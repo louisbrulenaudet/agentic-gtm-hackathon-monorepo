@@ -5,7 +5,7 @@
     // ES2023 lib (over the preset's ES2022) for Array#toSorted, which the
     // Workers runtime supports and oxlint prefers over the mutating sort().
     "lib": ["ES2023", "WebWorker"],
-    "types": ["./worker-configuration.d.ts"]
+    "types": []
   },
   "include": ["src/**/*.ts", "flue.config.ts", "worker-configuration.d.ts"]
 }

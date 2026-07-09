@@ -7,18 +7,20 @@ import {
 
 import orchestrator from "../agents/orchestrator";
 import {
+  BatchSummarySchema,
   EnrichedContactSchema,
   type ProspectScanInput,
   ProspectScanInputSchema,
   ProspectScanOutputSchema,
-  ProspectSynthesisSchema,
+  ProspectRankingSchema,
   SignalScoutResultSchema,
   TechFingerprintSchema,
 } from "../dtos";
 import {
+  buildBatchSummaryBrief,
   buildEnrichBrief,
+  buildPerDomainRankingBrief,
   buildScoutBrief,
-  buildSynthesisBrief,
   buildTechBrief,
   type DomainDossier,
   MAX_ENRICH_PER_DOMAIN,
@@ -99,20 +101,32 @@ export default defineWorkflow({
       input.domains.map((domain) => scanDomain(harness, domain, input)),
     );
 
-    // Stage 4: the orchestrator (Claude Opus 4.8) alone ranks and synthesizes,
-    // on the default session now that the parallel branches have settled. It
-    // returns judgment only (score/tier/use-cases/rationale) keyed by domain;
-    // `mergeRankings` rejoins the evidence the workflow already holds so the
-    // model never has to re-emit every dossier — that kept the synthesis stream
-    // small enough to finish.
-    const session = await harness.session();
-    const synthesis = await session.prompt(
-      buildSynthesisBrief(input, dossiers),
-      {
-        result: ProspectSynthesisSchema,
-      },
+    // Stage 4: shard ranking — one Opus prompt per domain (judgment only), then
+    // a tiny batch summary. A single batch synthesis stream was cut off by AI
+    // Gateway ("Stream ended without finish_reason"); per-domain streams finish
+    // reliably. `mergeRankings` rejoins evidence from dossiers by `domain`.
+    const rankings = await Promise.all(
+      dossiers.map(async (dossier) => {
+        const session = await harness.session(`rank:${dossier.domain}`);
+        const result = await session.prompt(
+          buildPerDomainRankingBrief(input, dossier),
+          { result: ProspectRankingSchema },
+        );
+        return result.data;
+      }),
     );
 
-    return mergeRankings(dossiers, synthesis.data);
+    rankings.sort((a, b) => b.opportunityScore - a.opportunityScore);
+
+    const summarySession = await harness.session("summary");
+    const summaryResult = await summarySession.prompt(
+      buildBatchSummaryBrief(input, rankings),
+      { result: BatchSummarySchema },
+    );
+
+    return mergeRankings(dossiers, {
+      rankings,
+      summary: summaryResult.data.summary,
+    });
   },
 });

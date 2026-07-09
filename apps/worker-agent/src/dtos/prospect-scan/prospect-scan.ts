@@ -174,6 +174,14 @@ export const ProspectRankingSchema = v.object({
   ),
 });
 
+/** Tiny result schema for the post-ranking batch summary prompt. */
+export const BatchSummarySchema = v.object({
+  summary: v.pipe(
+    v.string(),
+    v.description("A short batch-level read for the sales team."),
+  ),
+});
+
 /**
  * The orchestrator's full synthesis output: one ranking per account + a
  * summary.
@@ -210,5 +218,6 @@ export type SignalScoutResult = v.InferOutput<typeof SignalScoutResultSchema>;
 export type SalesUseCase = v.InferOutput<typeof SalesUseCaseSchema>;
 export type RankedProspect = v.InferOutput<typeof RankedProspectSchema>;
 export type ProspectRanking = v.InferOutput<typeof ProspectRankingSchema>;
+export type BatchSummary = v.InferOutput<typeof BatchSummarySchema>;
 export type ProspectSynthesis = v.InferOutput<typeof ProspectSynthesisSchema>;
 export type ProspectScanOutput = v.InferOutput<typeof ProspectScanOutputSchema>;

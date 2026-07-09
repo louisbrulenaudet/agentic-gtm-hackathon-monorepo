@@ -121,11 +121,9 @@
   // - SILLAGE_API_KEY — optional; see src/mcp/sillage.ts.
   // - FULLENRICH_API_KEY — optional; bound in the `enrich_contact` tool
   //   (src/tools/full-enrich.ts), never a model-supplied parameter.
-  // - ANTHROPIC_API_KEY — read directly by Flue's built-in `anthropic/...`
-  //   provider (not declared in secrets-env.d.ts — this app's own code never
-  //   touches it). Required for the `contact_enricher` subagent's model
-  //   (anthropic/claude-haiku-4-5) — reached DIRECTLY, unlike the
-  //   orchestrator's Claude Opus 4.8 above (which goes through AI Gateway /
-  //   CF_AIG_TOKEN instead). See .claude/rules/worker-agent.md for why this is
-  //   the one direct-Anthropic exception.
+  // - ANTHROPIC_API_KEY — optional; only needed if a subagent uses Flue's
+  //   built-in `anthropic/...` provider directly. Current specialists
+  //   (`signal_scout`, `contact_enricher`) route through AI Gateway via
+  //   `CF_AIG_TOKEN` (Claude Sonnet 4.6); the orchestrator uses Opus 4.8 on
+  //   the same gateway path.
 }
