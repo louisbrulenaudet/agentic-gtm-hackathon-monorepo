@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RunsRunIdRouteImport } from './routes/runs.$runId'
+import { Route as ReportsRunIdRouteImport } from './routes/reports.$runId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,30 +23,41 @@ const RunsRunIdRoute = RunsRunIdRouteImport.update({
   path: '/runs/$runId',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/runs.$runId.lazy').then((d) => d.Route))
+const ReportsRunIdRoute = ReportsRunIdRouteImport.update({
+  id: '/reports/$runId',
+  path: '/reports/$runId',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import('./routes/reports.$runId.lazy').then((d) => d.Route),
+)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/reports/$runId': typeof ReportsRunIdRoute
   '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/reports/$runId': typeof ReportsRunIdRoute
   '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/reports/$runId': typeof ReportsRunIdRoute
   '/runs/$runId': typeof RunsRunIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/runs/$runId'
+  fullPaths: '/' | '/reports/$runId' | '/runs/$runId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/runs/$runId'
-  id: '__root__' | '/' | '/runs/$runId'
+  to: '/' | '/reports/$runId' | '/runs/$runId'
+  id: '__root__' | '/' | '/reports/$runId' | '/runs/$runId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ReportsRunIdRoute: typeof ReportsRunIdRoute
   RunsRunIdRoute: typeof RunsRunIdRoute
 }
 
@@ -65,11 +77,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RunsRunIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports/$runId': {
+      id: '/reports/$runId'
+      path: '/reports/$runId'
+      fullPath: '/reports/$runId'
+      preLoaderRoute: typeof ReportsRunIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ReportsRunIdRoute: ReportsRunIdRoute,
   RunsRunIdRoute: RunsRunIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -4,10 +4,11 @@ import { Model } from "../enums/model";
 import { ThinkingLevel } from "../enums/thinking-level";
 import { connectSillageReadTools } from "../mcp/sillage";
 import instructions from "./orchestrator.md" with { type: "markdown" };
+import { createContactEnricher } from "./subagents/contact-enricher";
 import { createContentCollector } from "./subagents/content-collector";
 
 export const description =
-  "Demo orchestrator: lorem ipsum dolor sit amet, delegates source collection to the content_collector subagent and synthesizes a structured answer.";
+  "Demo orchestrator: lorem ipsum dolor sit amet, delegates source collection to the content_collector subagent, contact enrichment to the contact_enricher subagent, and synthesizes a structured answer.";
 
 /**
  * Durable-submission bounds for the orchestrator.
@@ -39,6 +40,7 @@ export const route: AgentRouteHandler = async (_c, next) => next();
 
 export default defineAgent<Env>(async () => {
   const contentCollector = createContentCollector();
+  const contactEnricher = createContactEnricher();
   // Read-only Sillage MCP tools (empty when SILLAGE_API_KEY is unset or the
   // connection fails — the agent still runs without them).
   const sillageTools = await connectSillageReadTools();
@@ -46,7 +48,7 @@ export default defineAgent<Env>(async () => {
   return {
     model: Model.CLAUDE_OPUS_4_8,
     instructions,
-    subagents: [contentCollector],
+    subagents: [contentCollector, contactEnricher],
     tools: sillageTools,
     thinkingLevel: ThinkingLevel.MEDIUM,
     durability: ORCHESTRATOR_DURABILITY,

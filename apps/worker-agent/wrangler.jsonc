@@ -39,8 +39,9 @@
   // Subagents (src/agents/subagents/*) are NOT discovered as agents and create
   // no Durable Object — they are imported by their parent. When you add a new
   // top-level agent/workflow, append a new migration tag (never edit v1).
-  // `src/agents/orchestrator.ts`     -> `FlueOrchestratorAgent` (v1).
-  // `src/workflows/sample-answer.ts` -> `FlueSampleAnswerWorkflow` (v2).
+  // `src/agents/orchestrator.ts`      -> `FlueOrchestratorAgent` (v1).
+  // `src/workflows/sample-answer.ts`  -> `FlueSampleAnswerWorkflow` (v2).
+  // `src/workflows/enrich-contacts.ts` -> `FlueEnrichContactsWorkflow` (v3).
   "migrations": [
     {
       "tag": "v1",
@@ -49,6 +50,10 @@
     {
       "tag": "v2",
       "new_sqlite_classes": ["FlueSampleAnswerWorkflow"],
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": ["FlueEnrichContactsWorkflow"],
     },
   ],
   "observability": {
@@ -67,6 +72,15 @@
     {
       "binding": "IDEMPOTENCY_KV",
       "id": "d98720f3dd544e6fa52321411bf2ca67",
+    },
+  ],
+  // Service binding to `worker-dns`'s RPC entrypoint (no HTTP, no auth — see
+  // apps/worker-dns/AGENTS.md). Used by the `techstack_prober` subagent's
+  // `analyze_domain` tool (src/tools/analyze-domain.ts).
+  "services": [
+    {
+      "binding": "DNS_WORKER",
+      "service": "worker-dns",
     },
   ],
   // PRODUCTION configuration. `flue build --target cloudflare` FLATTENS this
@@ -99,4 +113,14 @@
   //   authenticate the orchestrator's Claude Opus 4.8 calls to the gateway. The
   //   gateway holds the Anthropic credentials itself (BYOK stored key or
   //   Unified Billing credits), so no Anthropic API key is stored here.
+  // - SILLAGE_API_KEY — optional; see src/mcp/sillage.ts.
+  // - FULLENRICH_API_KEY — optional; bound in the `enrich_contact` tool
+  //   (src/tools/full-enrich.ts), never a model-supplied parameter.
+  // - ANTHROPIC_API_KEY — read directly by Flue's built-in `anthropic/...`
+  //   provider (not declared in secrets-env.d.ts — this app's own code never
+  //   touches it). Required for the `contact_enricher` subagent's model
+  //   (anthropic/claude-haiku-4-5) — reached DIRECTLY, unlike the
+  //   orchestrator's Claude Opus 4.8 above (which goes through AI Gateway /
+  //   CF_AIG_TOKEN instead). See .claude/rules/worker-agent.md for why this is
+  //   the one direct-Anthropic exception.
 }

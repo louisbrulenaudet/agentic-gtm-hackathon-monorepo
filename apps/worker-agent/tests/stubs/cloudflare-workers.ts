@@ -5,4 +5,7 @@
  * directly (same resolved module instance as the alias) and mutate `env` to
  * simulate bindings and secrets.
  */
-export const env: { AGENT_API_KEY?: string | undefined } = {};
+export const env: {
+  AGENT_API_KEY?: string | undefined;
+  FULLENRICH_API_KEY?: string | undefined;
+} = {};
