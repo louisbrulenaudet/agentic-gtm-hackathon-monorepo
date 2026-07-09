@@ -11,11 +11,16 @@
 
 ENVIRONMENT=dev
 
-# Inbound API key THIS Worker requires on /agents/*, /workflows/* and
-# /runs/:runId (sent as `X-API-Key` or `Authorization: Bearer`).
-# Requests are refused with 503 while it is unset — generate one with
-# `openssl rand -base64 32`. The eval harness reads it from the AGENT_API_KEY
-# environment variable. Production: `wrangler secret put AGENT_API_KEY`.
+# Browser origin allowed to call this Worker cross-origin (the front-app SPA).
+# localhost:5174 (vite dev) / :4174 (vite preview) are always allowed in code;
+# set this to the deployed SPA origin in production.
+WEB_APP_ORIGIN=http://localhost:5174
+
+# Inbound API key. HACKATHON: currently UNUSED — the auth guard was removed
+# from /agents/*, /workflows/* and /runs/:runId so the browser SPA can call
+# this Worker directly. Leave it blank locally. To re-enable auth, re-wire
+# `middlewares/require-api-key.ts` in app.ts + the workflow `runs` export.
+# The eval harness still reads it from the AGENT_API_KEY environment variable.
 AGENT_API_KEY=
 
 # Sillage workspace key (`sk_live_...`), sent as a static `Authorization: Bearer`
@@ -26,6 +31,16 @@ AGENT_API_KEY=
 SILLAGE_API_KEY=
 FULL_ENRICH_API_KEY=
 
-# No AI provider key is required: Workers AI inference runs through the `AI`
-# binding (and AI Gateway) under the Worker's own account. `AI_GATEWAY_ID` is a
-# non-secret var and lives in wrangler.jsonc.
+# Cloudflare AI Gateway authorization token — a Cloudflare API token with the
+# AI Gateway "Run" permission. Sent as `cf-aig-authorization: Bearer <token>` to
+# authenticate the orchestrator's Claude Opus 4.8 calls to the gateway (see
+# src/providers/anthropic-gateway.ts). REQUIRED for the orchestrator: the
+# gateway holds the Anthropic credentials (BYOK stored key or Unified Billing
+# credits), so no Anthropic API key is needed here. Create the token at
+# https://dash.cloudflare.com/profile/api-tokens and enable BYOK/credits on the
+# gateway. Production: `wrangler secret put CF_AIG_TOKEN`.
+CF_AIG_TOKEN=
+
+# Workers AI inference (subagents + compaction) runs through the `AI` binding
+# under the Worker's own account — no key needed. The non-secret `AI_GATEWAY_ID`
+# and `CF_ACCOUNT_ID` vars live in wrangler.jsonc.

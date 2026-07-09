@@ -7,7 +7,7 @@
 Read the monorepo spec first: **[../../AGENTS.md → What We're Building](../../AGENTS.md#what-were-building--agentic-gtm-intelligence)**. This file is the worker-level design.
 
 - **Dev:** `http://localhost:8788`
-- **Auth:** `AGENT_API_KEY` on `/agents/*`, `/workflows/*`, `/runs/:runId` (`X-API-Key` or `Authorization: Bearer`) — fail-closed (`503` when unset).
+- **Auth:** **none (hackathon).** The `AGENT_API_KEY` guard was removed from `/agents/*`, `/workflows/*` and `/runs/:runId` so the `front-app` SPA can call this Worker directly; a strict `hono/cors` allowlist (`WEB_APP_ORIGIN` + localhost) replaces it. `middlewares/require-api-key.ts` is retained — re-wire it (app.ts + the workflow `runs` export) to restore fail-closed auth for any non-hackathon deployment.
 - **Runtime:** Cloudflare Workers + Durable Objects (Flue) + Cloudflare KV (idempotency + result cache).
 
 Flue patterns load from `.claude/rules/worker-agent.md` when editing `src/agents/**` or `src/workflows/**`. Load the `flue` skill for framework depth; the `sillage-help` / `sillage-api` skills for the Sillage integration.
@@ -96,14 +96,14 @@ The `vendorPersona` on the request steers stage 4. Examples:
 
 ### Inference path
 
-Target model calls route through **AI Gateway** (caching + observability), with **Anthropic** as the upstream for the orchestrator's Claude Opus 4.8. This is a deliberate change from the current Workers-AI-only demo: implementing it means updating `src/enums/model.ts`, `src/providers/`, and the `wrangler.jsonc` bindings/secrets (out of scope for docs-only changes — do it in the implementation PR). Sub-agents may stay on cheaper/faster models.
+The **orchestrator** runs **Claude Opus 4.8** routed through **Cloudflare AI Gateway** to **Anthropic** (caching + observability). It resolves from pi-ai's `cloudflare-ai-gateway` catalog (`Model.CLAUDE_OPUS_4_8` = `cloudflare-ai-gateway/claude-opus-4-8`); `src/providers/anthropic-gateway.ts` registers that provider, overriding the gateway base URL (`CF_ACCOUNT_ID` + `AI_GATEWAY_ID`) and passing `CF_AIG_TOKEN` as the `cf-aig-authorization` header. **No Anthropic key lives in the Worker** — AI Gateway supplies the upstream credentials via a stored provider key (BYOK) or Unified Billing credits. **Sub-agents + compaction** stay on the cheaper **Workers AI** models (`cloudflare/…`) through the `AI` binding (`src/providers/cloudflare-ai.ts`).
 
 ## What runs today (demo scaffold)
 
 | Piece | Slug | Role |
 |-------|------|------|
 | Workflow | `sample-answer` | `POST /workflows/sample-answer` — validates input, runs orchestrator, validates output |
-| Agent | `orchestrator` | Plans, delegates, synthesizes (Durable Object) — currently Kimi K2.6 on Workers AI |
+| Agent | `orchestrator` | Plans, delegates, synthesizes (Durable Object) — **Claude Opus 4.8** via AI Gateway (Anthropic upstream); compaction stays on Workers AI |
 | Subagent | `content_collector` | Returns references + excerpts only (no DO) — placeholder for the GTM specialists |
 | MCP client | `sillage` | `src/mcp/sillage.ts` — `connectMcpServer` adapts Sillage's read-only `list_signals` into a Flue tool on the orchestrator; skipped when `SILLAGE_API_KEY` is unset. First slice of the target `signal_scout`. |
 
@@ -113,7 +113,8 @@ flowchart LR
   Wf --> Orch[orchestrator]
   Orch --> Collector[content_collector]
   Collector --> Orch
-  Orch --> AI[Workers AI]
+  Orch -->|"Claude Opus 4.8"| AIG[AI Gateway → Anthropic]
+  Collector --> AI[Workers AI]
   Orch -.->|"mcp__sillage__…list_signals (read-only)"| Sillage[(Sillage MCP)]
 ```
 
@@ -172,24 +173,26 @@ Copy `apps/worker-agent/.dev.vars.example` → `.dev.vars` (gitignored). Never c
 
 | Name | Kind | Purpose |
 |------|------|---------|
-| `AGENT_API_KEY` | secret | Inbound API key; unset → `503` on guarded routes |
-| `AI` | binding | Workers AI (current demo inference) |
+| `WEB_APP_ORIGIN` | var | Browser origin allowed by CORS (the `front-app` SPA); `localhost:5174`/`:4174` are always allowed in code |
+| `AGENT_API_KEY` | secret | Inbound API key — **unused (hackathon)**; the auth guard was removed. Re-wire `middlewares/require-api-key.ts` to re-enable |
+| `AI` | binding | Workers AI — subagents + compaction inference |
 | `IDEMPOTENCY_KV` | KV | `Idempotency-Key` replay cache (24h) + per-domain result cache |
-| `AI_GATEWAY_ID` | var | Gateway id (`default` = implicit gateway) |
+| `AI_GATEWAY_ID` | var | Gateway id (`default` = implicit gateway); used for both the `AI` binding and the Anthropic endpoint URL |
+| `CF_ACCOUNT_ID` | var | Cloudflare account id — builds the AI Gateway Anthropic endpoint URL (`src/providers/anthropic-gateway.ts`) |
 | `ENVIRONMENT` | var | `production` / `dev` |
+| `CF_AIG_TOKEN` | secret | AI Gateway authorization token (`cf-aig-authorization`) for the orchestrator's Claude Opus 4.8 calls. **Required** for the orchestrator; the gateway holds the Anthropic credentials (BYOK / Unified Billing), so no Anthropic key is stored here |
 | `SILLAGE_API_KEY` | secret | Sillage (`sk_live_…`) — static bearer for the Sillage MCP client (`src/mcp/sillage.ts`). Optional; unset → orchestrator runs without the Sillage read tools |
 | `FULLENRICH_API_KEY` | secret | **target** — FullEnrich for `contact_enricher` |
-| `ANTHROPIC_API_KEY` | secret | **target** — Anthropic upstream via AI Gateway for Claude Opus 4.8 |
 
 ## HTTP surface
 
 | Method / path | Auth | Description |
 |---------------|------|-------------|
-| `POST /workflows/sample-answer` | yes | *(demo)* `{ question }` → `{ answer, sources[] }`; `?wait=result` for sync |
-| `POST /workflows/prospect-scan` | yes | **target** — `{ domains[], vendorPersona }` → ranked prospects + sales use cases |
-| `GET /runs/:runId` | yes | Workflow run detail |
-| `POST /agents/orchestrator/:id` | yes | Conversational agent (`?wait=result` for sync) |
-| `GET /agents/orchestrator/:id` | yes | SSE stream |
+| `POST /workflows/sample-answer` | none | *(demo)* `{ question }` → `{ answer, sources[] }`; `?wait=result` for sync |
+| `POST /workflows/prospect-scan` | none | **target** — `{ domains[], vendorPersona }` → ranked prospects + sales use cases |
+| `GET /runs/:runId` | none | Workflow run detail |
+| `POST /agents/orchestrator/:id` | none | Conversational agent (`?wait=result` for sync) |
+| `GET /agents/orchestrator/:id` | none | SSE stream |
 | `GET /health`, `GET /` | no | Health + service descriptor |
 
 Flue schema slots use **valibot**; other app boundaries stay on **Zod 4**. Send `Idempotency-Key` on workflow POST to dedupe retries.

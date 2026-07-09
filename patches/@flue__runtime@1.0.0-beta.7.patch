@@ -1,0 +1,22 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index b58b4976e1c0bc409f32a2f55bc210d57f44c602..fda9a86886e7ae5d04f9d75a81a7a3ad4333a5e8 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -9,7 +9,7 @@ import { c as registerProvider, s as registerApiProvider } from "./providers-DGT
+ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
+-import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
++import { CfWorkerJsonSchemaValidator as AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/cfworker";
+ //#region package.json
+ var version = "1.0.0-beta.7";
+ //#endregion
+@@ -29,7 +29,7 @@ async function connectMcpServer(name, options) {
+ 	return connectMcpServerWithClient(name, new Client({
+ 		name: "flue",
+ 		version
+-	}), transport, {
++	}, { jsonSchemaValidator: new AjvJsonSchemaValidator() }), transport, {
+ 		timeout: options.timeoutMs,
+ 		resetTimeoutOnProgress: options.resetTimeoutOnProgress
+ 	});

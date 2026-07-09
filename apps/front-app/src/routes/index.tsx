@@ -1,7 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { healthQueryOptions } from "@/services/worker-api/health-query-options";
 
-export const Route = createFileRoute("/")({
-  loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(healthQueryOptions),
-});
+// Landing route: no data to load. The UI (a run-UUID lookup) lives in the
+// paired `index.lazy.tsx`.
+export const Route = createFileRoute("/")({});

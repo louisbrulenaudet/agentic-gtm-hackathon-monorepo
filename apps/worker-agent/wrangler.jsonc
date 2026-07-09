@@ -75,14 +75,28 @@
   // overrides live in `.dev.vars` (loaded by `flue dev` / `wrangler dev`).
   "vars": {
     "ENVIRONMENT": "production",
-    // AI Gateway id that Workers AI inference is routed through. Create it in
-    // the Cloudflare dashboard (AI -> AI Gateway). Use "default" to use the
-    // implicit gateway with no extra setup.
+    // AI Gateway id that inference is routed through — both Workers AI (via the
+    // `AI` binding) and Anthropic/Claude Opus 4.8 (via the Anthropic endpoint,
+    // see src/providers/anthropic-gateway.ts). Create it in the Cloudflare
+    // dashboard (AI -> AI Gateway). Use "default" for the implicit gateway.
     "AI_GATEWAY_ID": "default",
+    // Cloudflare account id used to build the AI Gateway Anthropic endpoint URL
+    // (https://gateway.ai.cloudflare.com/v1/<CF_ACCOUNT_ID>/<AI_GATEWAY_ID>/anthropic).
+    // Not a secret — it already appears as `account_id` above.
+    "CF_ACCOUNT_ID": "b664c6731df8a734cb99254f1991e102",
+    // Deployed `front-app` SPA origin allowed to call this Worker cross-origin
+    // (CORS). `vite dev` (5174) / `vite preview` (4174) localhost origins are
+    // always allowed in code — set this to the production SPA origin on deploy.
+    "WEB_APP_ORIGIN": "http://localhost:5174",
   },
   // Secrets (declare in src/types/secrets-env.d.ts; `wrangler secret put` for
   // prod, `.dev.vars` locally):
-  // - AGENT_API_KEY — inbound key required on /agents/*, /workflows/* and
-  //   /runs/:runId. Rate limiting / budget caps are enforced at the edge
-  //   (Cloudflare WAF rules) and in AI Gateway, not in Worker code.
+  // - AGENT_API_KEY — inbound key. HACKATHON: currently unused — the auth
+  //   guard was removed so the browser SPA can call this Worker directly. Keep
+  //   the secret declared; re-wire `middlewares/require-api-key.ts` to enforce.
+  // - CF_AIG_TOKEN — Cloudflare AI Gateway authorization token (an API token
+  //   with the AI Gateway "Run" permission). Sent as `cf-aig-authorization` to
+  //   authenticate the orchestrator's Claude Opus 4.8 calls to the gateway. The
+  //   gateway holds the Anthropic credentials itself (BYOK stored key or
+  //   Unified Billing credits), so no Anthropic API key is stored here.
 }

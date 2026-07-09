@@ -18,6 +18,8 @@
     "types": "wrangler types"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
+    "@flue/sdk": "1.0.0-beta.7",
     "@repo/dtos-common": "workspace:*",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-router": "^1.170.17",

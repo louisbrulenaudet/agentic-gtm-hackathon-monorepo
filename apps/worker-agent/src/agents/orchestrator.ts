@@ -14,8 +14,8 @@ export const description =
  *
  * Flue defaults are `maxAttempts: 10` and `timeoutMs: 3_600_000` (1h). Each DO
  * reset or deploy that interrupts a running submission consumes an attempt and
- * re-runs the agent (paid Workers AI inference), so we cap retries far lower.
- * `timeoutMs` is the wall-clock ceiling for a single run.
+ * re-runs the agent (paid Claude Opus 4.8 inference via AI Gateway), so we cap
+ * retries far lower. `timeoutMs` is the wall-clock ceiling for a single run.
  */
 const ORCHESTRATOR_DURABILITY = {
   maxAttempts: 3,
@@ -44,7 +44,7 @@ export default defineAgent<Env>(async () => {
   const sillageTools = await connectSillageReadTools();
 
   return {
-    model: Model.KIMI_K2_6,
+    model: Model.CLAUDE_OPUS_4_8,
     instructions,
     subagents: [contentCollector],
     tools: sillageTools,

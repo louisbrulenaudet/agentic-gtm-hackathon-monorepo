@@ -4,18 +4,29 @@
  * namespace here so `import { env } from "cloudflare:workers"` is fully typed
  * across the app.
  *
- * Non-secret vars (AI_GATEWAY_ID, ENVIRONMENT) and the `AI` binding come from
- * the generated `worker-configuration.d.ts`.
+ * Non-secret vars (AI_GATEWAY_ID, CF_ACCOUNT_ID, ENVIRONMENT) and the `AI`
+ * binding come from the generated `worker-configuration.d.ts`.
  */
 declare namespace Cloudflare {
   interface Env {
     /**
-     * Inbound API key required on `/agents/*`, `/workflows/*` and
-     * `/runs/:runId` (as `X-API-Key` or `Authorization: Bearer`). Enforced by
-     * `middlewares/require-api-key.ts`; requests are refused with `503` when it
-     * is unset.
+     * Inbound API key (as `X-API-Key` or `Authorization: Bearer`). HACKATHON:
+     * currently unused — the auth guard was removed from `/agents/*`,
+     * `/workflows/*` and `/runs/:runId` so the browser SPA can call this Worker
+     * directly. `middlewares/require-api-key.ts` still reads it and can be
+     * re-wired to restore fail-closed auth.
      */
     AGENT_API_KEY: string;
+
+    /**
+     * Cloudflare AI Gateway authorization token (an API token with the AI
+     * Gateway "Run" permission). Sent as the `cf-aig-authorization: Bearer`
+     * header by `src/providers/anthropic-gateway.ts` to authenticate the
+     * orchestrator's Claude Opus 4.8 calls to the gateway. The gateway supplies
+     * the Anthropic credentials itself (BYOK stored key or Unified Billing
+     * credits), so no Anthropic API key is stored in this Worker.
+     */
+    CF_AIG_TOKEN: string;
 
     /**
      * Sillage workspace key (`sk_live_...`), sent as a static `Authorization:

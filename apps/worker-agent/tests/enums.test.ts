@@ -13,9 +13,15 @@ describe("Model enum", () => {
     expect(MODELS.toSorted()).toEqual(Object.values(Model).toSorted());
   });
 
-  it("namespaces every model under the cloudflare provider", () => {
+  it("namespaces every model under a Cloudflare provider", () => {
+    // Workers AI models resolve through the `cloudflare` binding provider;
+    // Claude models route through the `cloudflare-ai-gateway` catalog provider
+    // (Anthropic upstream via AI Gateway).
     for (const model of MODELS) {
-      expect(model.startsWith("cloudflare/")).toBe(true);
+      expect(
+        model.startsWith("cloudflare/") ||
+          model.startsWith("cloudflare-ai-gateway/"),
+      ).toBe(true);
     }
   });
 

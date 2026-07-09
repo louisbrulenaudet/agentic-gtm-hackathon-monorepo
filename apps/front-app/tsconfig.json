@@ -1,6 +1,7 @@
 {
   "extends": "@repo/typescript-config/vite-react.json",
   "compilerOptions": {
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"],
       "@utils/*": ["./src/utils/*"],

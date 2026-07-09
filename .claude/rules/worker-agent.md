@@ -17,13 +17,16 @@ paths:
 
 - Flue's workflow/agent **`input` / `output` schema slots are valibot**-typed. Use valibot only inside those slots; every other schema in this app (events, query DTOs) stays on **Zod 4**. See [contracts.md](contracts.md).
 
-## Auth (fail closed)
+## Auth (hackathon: currently disabled)
 
-- The `AGENT_API_KEY` secret guards `/agents/*`, `/workflows/*`, `/events`, and `/runs/:runId` (timing-safe compare; accepts `X-API-Key` or `Authorization: Bearer`). `/` and `/health` stay public. When the secret is unset, guarded routes answer **503** — keep this fail-closed; never default to permissive. Reuse `middlewares/require-api-key.ts` / `agent-api-key-guard.ts`; do not roll new auth. It is a machine-to-machine surface — no CORS middleware.
+- **Current state:** the `AGENT_API_KEY` guard has been **removed** from `/agents/*`, `/workflows/*` and `/runs/:runId` so the browser SPA (`front-app`) can call this Worker directly, and a strict `hono/cors` allowlist (`WEB_APP_ORIGIN` + localhost) was added. `/` and `/health` remain public.
+- **To restore fail-closed auth** (any non-hackathon deployment): re-wire `middlewares/require-api-key.ts` in `app.ts` (on `/agents/*`, `/workflows/*`) and set the workflow `runs` export back to it — timing-safe compare, `X-API-Key` or `Authorization: Bearer`, **503** when the secret is unset. Never default to permissive; do not roll new auth. Keep CORS strict and allowlisted whenever a browser client exists.
 
 ## Inference & observability
 
-- All model calls go through the `AI` binding (Workers AI) routed via AI Gateway (`providers/cloudflare-ai.ts`, `AI_GATEWAY_ID` var) — no external LLM provider key.
+- Two providers, both observable through **AI Gateway** (`AI_GATEWAY_ID` var):
+  - **Workers AI** (`cloudflare/…`) — subagents + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key.
+  - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator — via the gateway's Anthropic endpoint (`providers/anthropic-gateway.ts`). Auth is the `CF_AIG_TOKEN` gateway token; the Anthropic credential lives in the gateway (BYOK / Unified Billing), never in the Worker.
 
 ## Where things go
 
