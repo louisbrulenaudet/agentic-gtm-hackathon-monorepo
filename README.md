@@ -15,7 +15,8 @@ Agentic GTM is a production-oriented monorepo for go-to-market automation: pnpm 
 ```
 monorepo/
 ├── apps/                    # Individual Cloudflare Workers and Applications
-│   └── front-app/           # React-based frontend application
+│   ├── front-app/           # React-based frontend application
+│   └── worker-agent/        # Flue agent Worker (orchestrator + sample-answer workflow)
 ├── packages/                # Shared packages
 │   ├── dtos-common/         # Shared data transfer objects
 │   ├── enums-common/        # Shared enumerations
@@ -127,6 +128,7 @@ This installs Husky git hooks to ensure code quality standards are enforced on c
 | Service | Path | port |
 |---|---|---:|
 | front-app | `apps/front-app/package.json` (Vite dev) | 5174 |
+| worker-agent | `apps/worker-agent/wrangler.jsonc` (`dev.port`) | 8788 |
 
 Notes:
 - These are development ports defined in each app's `dev` block in `wrangler.jsonc` (for workers) or Vite configuration (for frontend apps).

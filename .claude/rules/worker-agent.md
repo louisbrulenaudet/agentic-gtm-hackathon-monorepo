@@ -24,7 +24,6 @@ paths:
 ## Inference & observability
 
 - All model calls go through the `AI` binding (Workers AI) routed via AI Gateway (`providers/cloudflare-ai.ts`, `AI_GATEWAY_ID` var) — no external LLM provider key.
-- `lib/event-collector.ts` wires Flue's `observe()` hook to project high-level events into `EVENTS_KV` (24h TTL) plus an isolate-local ring.
 
 ## Where things go
 
