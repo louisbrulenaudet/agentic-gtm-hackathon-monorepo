@@ -18,7 +18,7 @@
     "lint:fix": "oxlint --no-error-on-unmatched-pattern --fix .",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "types": "wrangler types -c ./wrangler.jsonc"
+    "types": "wrangler types -c ./wrangler.jsonc -c ../worker-dns/wrangler.jsonc"
   },
   "dependencies": {
     "@flue/runtime": "1.0.0-beta.7",

@@ -48,14 +48,8 @@ CF_AIG_TOKEN=
 # Production: `wrangler secret put FULLENRICH_API_KEY`.
 FULLENRICH_API_KEY=
 
-# Anthropic API key for the `contact_enricher` subagent's model
-# (anthropic/claude-haiku-4-5, src/agents/subagents/contact-enricher.ts) —
-# Flue's built-in `anthropic/...` provider, reached DIRECTLY (unlike the
-# orchestrator's Claude Opus 4.8 above, which goes through AI Gateway/
-# CF_AIG_TOKEN instead). No custom provider registration needed, just this
-# credential. See .claude/rules/worker-agent.md for why this subagent is the
-# one direct-Anthropic exception. Get a key at
-# https://console.anthropic.com/settings/keys.
+# Optional — unused in this app. All Claude models (Opus orchestrator, Sonnet
+# specialists) route through AI Gateway with CF_AIG_TOKEN instead.
 # Production: `wrangler secret put ANTHROPIC_API_KEY`.
 ANTHROPIC_API_KEY=
 

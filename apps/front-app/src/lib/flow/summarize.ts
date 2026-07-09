@@ -3,7 +3,7 @@
  * single-line strings safe to render on a node. Pure, no React.
  */
 
-const DEFAULT_MAX_LENGTH = 160;
+const DEFAULT_MAX_LENGTH = 80;
 
 /** Stringify + collapse whitespace + truncate any value for node display. */
 export function summarizeValue(

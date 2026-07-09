@@ -21,16 +21,37 @@ const SILLAGE_MCP_SERVER_NAME = "sillage";
 
 /**
  * Read-only Sillage capabilities exposed to the model. Least privilege: the
- * Sillage MCP also ships write tools (edit persona, add accounts, launch runs),
- * and model-facing surfaces must stay read/query-oriented (guardrails), so we
- * **allow-list** rather than deny — anything not named here is never surfaced.
+ * Sillage MCP also ships write tools (upsert persona, add/remove accounts,
+ * create/configure/delete agents, launch runs, enrich_company — which spends
+ * credits), and model-facing surfaces must stay read/query-oriented
+ * (guardrails), so we **allow-list** rather than deny — anything not named here
+ * is never surfaced. Every entry below is a pure GET/query.
  *
  * These are base capability names. Adapted tool names are
  * `mcp__sillage__<orig>` and Sillage may prefix the original with
  * `sillage_v2_`, so we match on the tail (`…_list_signals`) instead of an exact
  * string.
+ *
+ * This set is what the `signal_scout` subagent needs to turn one domain into
+ * commercial signals + decision-makers: map the domain to a Sillage company,
+ * read the org graph / leads, pull published detections, and interpret each one
+ * with the signal playbook (who to contact).
  */
-const SILLAGE_READONLY_TOOLS = ["list_signals"] as const;
+const SILLAGE_READONLY_TOOLS = [
+  // Domain → company resolution and the org graph.
+  "get_company",
+  "get_company_mapping",
+  "list_company_mappings",
+  "get_lead",
+  // Targeting context (ICP + which detectors are live).
+  "get_persona",
+  "get_agents",
+  // Published detections + how to read them.
+  "list_signals",
+  "get_signal",
+  "get_signal_playbook",
+  "get_signal_run",
+] as const;
 
 function isReadOnlySillageTool(toolName: string): boolean {
   return SILLAGE_READONLY_TOOLS.some(

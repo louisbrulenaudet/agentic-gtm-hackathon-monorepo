@@ -7,7 +7,7 @@ export function AgentNode({ data, selected }: NodeProps<AppNode>) {
   return (
     <NodeShell
       data={data}
-      icon="🧠"
+      badge="OR"
       accentClassName="bg-violet-500/20 text-violet-300"
       selected={selected}
     />

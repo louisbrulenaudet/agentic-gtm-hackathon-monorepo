@@ -16,7 +16,6 @@ function fakeStore(): IdempotencyStore & { size: () => number } {
       if (value === undefined) {
         return Promise.resolve(null);
       }
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- the fake round-trips its own `put` payloads.
       return Promise.resolve(JSON.parse(value) as T);
     },
     put: (key: string, value: string): Promise<void> => {

@@ -6,8 +6,12 @@ import type { DnsAnalysisResponse } from "@repo/dtos-common/rpc";
  * the RPC contract documented in apps/worker-dns/AGENTS.md so
  * `env.DNS_WORKER.analyzeDomain(...)` is typed without a cast, while staying
  * assignable to the generated `Fetcher` type (no merge conflict).
+ *
+ * Augment `Cloudflare.Env` (not the global `Env`) so the type reaches the
+ * `import { env } from "cloudflare:workers"` accessor used by the tools — the
+ * same pattern `secrets-env.d.ts` uses for the secret bindings.
  */
-declare global {
+declare namespace Cloudflare {
   interface Env {
     DNS_WORKER: Fetcher & {
       analyzeDomain(domain: string): Promise<DnsAnalysisResponse>;

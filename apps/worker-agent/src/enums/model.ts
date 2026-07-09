@@ -7,21 +7,23 @@ export const Model = {
    * providers/anthropic-gateway.ts.
    */
   CLAUDE_OPUS_4_8: "cloudflare-ai-gateway/claude-opus-4-8",
+  /**
+   * Specialist-tier model for MCP-backed or lower-stakes subagents (Sillage
+   * scouting, contact enrichment). Latest Sonnet in pi-ai's gateway catalog as
+   * of @flue/runtime 1.0.0-beta.7 — there is no `claude-sonnet-5` entry yet.
+   */
+  CLAUDE_SONNET_4_6: "cloudflare-ai-gateway/claude-sonnet-4-6",
   KIMI_K2_6: "cloudflare/@cf/moonshotai/kimi-k2.6",
   GLM_5_2: "cloudflare/@cf/zai-org/glm-5.2",
   GEMMA_4_26B_A4B_IT: "cloudflare/@cf/google/gemma-4-26b-a4b-it",
-  // Flue's built-in Anthropic provider (ANTHROPIC_API_KEY) — the one
-  // deliberate exception to this app's Workers-AI-only default, scoped to
-  // the contact_enricher subagent. See .claude/rules/worker-agent.md.
-  CLAUDE_HAIKU_4_5: "anthropic/claude-haiku-4-5",
 } as const;
 
 export const MODELS = [
   Model.CLAUDE_OPUS_4_8,
+  Model.CLAUDE_SONNET_4_6,
   Model.KIMI_K2_6,
   Model.GLM_5_2,
   Model.GEMMA_4_26B_A4B_IT,
-  Model.CLAUDE_HAIKU_4_5,
 ] as const;
 
 export type Model = (typeof MODELS)[number];

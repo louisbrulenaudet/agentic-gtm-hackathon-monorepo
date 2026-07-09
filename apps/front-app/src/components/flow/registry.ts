@@ -1,6 +1,7 @@
 import type { NodeTypes } from "@xyflow/react";
 import { FlowNodeKind } from "@enums/flow-node-kind";
 import { AgentNode } from "./nodes/agent-node";
+import { SkillNode } from "./nodes/skill-node";
 import { SubagentNode } from "./nodes/subagent-node";
 import { ToolNode } from "./nodes/tool-node";
 import { WorkflowNode } from "./nodes/workflow-node";
@@ -17,4 +18,5 @@ export const nodeTypes: NodeTypes = {
   [FlowNodeKind.SUBAGENT]: SubagentNode,
   [FlowNodeKind.TOOL]: ToolNode,
   [FlowNodeKind.MCP_TOOL]: ToolNode,
+  [FlowNodeKind.SKILL]: SkillNode,
 };

@@ -30,19 +30,18 @@ export default defineWorkflow({
   input: EnrichContactsInputSchema,
   output: EnrichContactsOutputSchema,
   async run({ harness, input }) {
-    const session = await harness.session();
-
-    // Each `task()` call starts its own independent child session (see
-    // `contact_enricher`'s own instructions for what it does with it), so
-    // fanning them out with `Promise.all` enriches every contact in the
-    // batch concurrently rather than one at a time.
+    // A Flue session runs one operation at a time, so fanning `task()` calls
+    // out with `Promise.all` on a single session throws `SessionBusyError`.
+    // Give each contact its own session; the task still spawns an isolated
+    // child, so enrichment runs concurrently across the batch.
     const results = await Promise.all(
-      input.contacts.map((contact) =>
-        session.task(buildContactTaskMessage(contact), {
+      input.contacts.map(async (contact, index) => {
+        const session = await harness.session(`enrich:${index}`);
+        return session.task(buildContactTaskMessage(contact), {
           agent: "contact_enricher",
           result: EnrichedContactSchema,
-        }),
-      ),
+        });
+      }),
     );
 
     return { contacts: results.map((result) => result.data) };

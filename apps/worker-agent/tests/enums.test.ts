@@ -15,22 +15,29 @@ describe("Model enum", () => {
 
   it("namespaces every model under a known Flue provider", () => {
     // cloudflare/...            = Workers AI binding (default, no API key).
-    // cloudflare-ai-gateway/... = Claude Opus 4.8 for the orchestrator, via AI Gateway.
-    // anthropic/...             = Flue's built-in Anthropic provider, direct —
-    //   the one deliberate exception, scoped to contact_enricher only.
-    // See .claude/rules/worker-agent.md.
+    // cloudflare-ai-gateway/... = Claude models via AI Gateway (orchestrator +
+    //   specialist subagents), authenticated with CF_AIG_TOKEN.
     for (const model of MODELS) {
       expect(
         model.startsWith("cloudflare/") ||
-          model.startsWith("cloudflare-ai-gateway/") ||
-          model.startsWith("anthropic/"),
+          model.startsWith("cloudflare-ai-gateway/"),
       ).toBe(true);
     }
   });
 
-  it("scopes the direct-Anthropic exception to contact_enricher's model only", () => {
-    const direct = MODELS.filter((model) => model.startsWith("anthropic/"));
-    expect(direct).toEqual([Model.CLAUDE_HAIKU_4_5]);
+  it("routes Claude models through AI Gateway, not direct Anthropic", () => {
+    const gateway = MODELS.filter((model) =>
+      model.startsWith("cloudflare-ai-gateway/"),
+    );
+    expect(gateway).toEqual([Model.CLAUDE_OPUS_4_8, Model.CLAUDE_SONNET_4_6]);
+    expect(MODELS.some((model) => model.startsWith("anthropic/"))).toBe(false);
+  });
+
+  it("reserves Opus for the orchestrator and Sonnet for specialist subagents", () => {
+    expect(DEFAULT_MODEL).toBe(Model.CLAUDE_OPUS_4_8);
+    expect(Model.CLAUDE_SONNET_4_6).toBe(
+      "cloudflare-ai-gateway/claude-sonnet-4-6",
+    );
   });
 
   it("defaults the orchestrator to a known model", () => {

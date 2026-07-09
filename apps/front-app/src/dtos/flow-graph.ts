@@ -18,17 +18,36 @@ export const FlowNodeFieldSchema = z.object({
   value: z.string(),
 });
 
+/** Full payload section shown in the detail panel (prompt, args, result…). */
+export const FlowNodeDetailSectionSchema = z.object({
+  label: z.string(),
+  value: z.unknown(),
+});
+
 /** Unified node `data`. `kind` selects the presentational component + styling. */
 export const FlowNodeDataSchema = z.object({
   kind: z.enum(FlowNodeKind),
   label: z.string(),
   status: z.enum(FlowNodeStatus),
+  /** One-line business role, e.g. "Signaux commerciaux Sillage + décideurs". */
+  description: z.string().optional(),
   /** Secondary line under the label (tool name, agent profile, workflow name). */
   subtitle: z.string().optional(),
   /** Wall-clock duration in ms once the step settled. */
   durationMs: z.number().optional(),
   /** Pre-summarized context/params from the triggering event. */
   fields: z.array(FlowNodeFieldSchema).default([]),
+  /** Smart one-liners for the node card (up to 3 rendered). */
+  previewFields: z.array(FlowNodeFieldSchema).default([]),
+  /** Full payloads for the detail panel. */
+  detailSections: z.array(FlowNodeDetailSectionSchema).default([]),
+  /**
+   * Wall-clock ms when the step first appeared — stabilizes Dagre sibling
+   * order.
+   */
+  startedAt: z.number().optional(),
+  /** When true, the user dragged this node and layout should not move it. */
+  userPositioned: z.boolean().optional(),
 });
 
 /** Edge `data`; `active` drives the animated dashes while the target runs. */
@@ -37,6 +56,7 @@ export const FlowEdgeDataSchema = z.object({
 });
 
 export type FlowNodeField = z.infer<typeof FlowNodeFieldSchema>;
+export type FlowNodeDetailSection = z.infer<typeof FlowNodeDetailSectionSchema>;
 export type FlowNodeData = z.infer<typeof FlowNodeDataSchema>;
 export type FlowEdgeData = z.infer<typeof FlowEdgeDataSchema>;
 

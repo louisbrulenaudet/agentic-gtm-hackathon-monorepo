@@ -26,9 +26,10 @@ globs: apps/**/src/agents/**,apps/**/src/workflows/**
 
 ## Inference & observability
 
-- Two providers, both observable through **AI Gateway** (`AI_GATEWAY_ID` var):
-  - **Workers AI** (`cloudflare/…`) — subagents + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key.
-  - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator — via the gateway's Anthropic endpoint (`providers/anthropic-gateway.ts`). Auth is the `CF_AIG_TOKEN` gateway token; the Anthropic credential lives in the gateway (BYOK / Unified Billing), never in the Worker.
+- Two Claude tiers route through **AI Gateway** (`AI_GATEWAY_ID` var, `CF_AIG_TOKEN`):
+  - **Workers AI** (`cloudflare/…`) — `techstack_prober` + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key.
+  - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator — via `providers/anthropic-gateway.ts`.
+  - **Claude Sonnet 4.6** (`cloudflare-ai-gateway/…`) — `signal_scout` (MCP) and `contact_enricher` — same gateway auth as Opus; latest Sonnet in pi-ai (no Sonnet 5 id yet).
 
 ## Where things go
 

@@ -37,6 +37,12 @@
       "new_sqlite_classes": [
         "FlueEnrichContactsWorkflow"
       ]
+    },
+    {
+      "tag": "v4",
+      "new_sqlite_classes": [
+        "FlueProspectScanWorkflow"
+      ]
     }
   ],
   "observability": {
@@ -71,6 +77,10 @@
       {
         "name": "FLUE_ENRICH_CONTACTS_WORKFLOW",
         "class_name": "FlueEnrichContactsWorkflow"
+      },
+      {
+        "name": "FLUE_PROSPECT_SCAN_WORKFLOW",
+        "class_name": "FlueProspectScanWorkflow"
       },
       {
         "name": "FLUE_SAMPLE_ANSWER_WORKFLOW",

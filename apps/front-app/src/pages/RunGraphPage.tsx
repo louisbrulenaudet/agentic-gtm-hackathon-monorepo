@@ -3,7 +3,9 @@ import { useRunGraph } from "@hooks/use-run-graph";
 import { runQueryOptions } from "@services/flue/run-query-options";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { FlowCanvas } from "@/components/flow/flow-canvas";
+import { NodeDetailPanel } from "@/components/flow/node-detail-panel";
 
 const PHASE_META: Record<RunStreamPhase, { label: string; className: string }> =
   {
@@ -34,10 +36,16 @@ export type RunGraphPageProps = Readonly<{ runId: string }>;
 export function RunGraphPage({ runId }: RunGraphPageProps) {
   const { data: run } = useSuspenseQuery(runQueryOptions(runId));
   const { nodes, edges, phase, error, eventCount } = useRunGraph(runId);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>();
   const phaseMeta = PHASE_META[phase];
 
+  const selectedNode = useMemo(
+    () => nodes.find((node) => node.id === selectedNodeId),
+    [nodes, selectedNodeId],
+  );
+
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-dvh flex-col">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-white/10 bg-slate-950/80 px-5 py-3">
         <Link to="/" className="text-sm text-slate-400 hover:text-slate-200">
           ← runs
@@ -68,7 +76,19 @@ export function RunGraphPage({ runId }: RunGraphPageProps) {
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <FlowCanvas nodes={nodes} edges={edges} />
+        <FlowCanvas
+          nodes={nodes}
+          edges={edges}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={setSelectedNodeId}
+        />
+
+        <NodeDetailPanel
+          node={selectedNode}
+          onClose={() => {
+            setSelectedNodeId(undefined);
+          }}
+        />
 
         {nodes.length === 0 ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

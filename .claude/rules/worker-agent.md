@@ -25,9 +25,9 @@ paths:
 ## Inference & observability
 
 - Three providers are in play:
-  - **Workers AI** (`cloudflare/…`) — subagents + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key. This remains the default for any new agent/subagent.
-  - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator — via the gateway's Anthropic endpoint (`providers/anthropic-gateway.ts`). Auth is the `CF_AIG_TOKEN` gateway token; the Anthropic credential lives in the gateway (BYOK / Unified Billing), never in the Worker.
-  - **Claude Haiku 4.5** (`anthropic/…`) — the `contact_enricher` subagent (`src/agents/subagents/contact-enricher.ts`) only — reached **directly** via Flue's built-in `anthropic/...` provider (`ANTHROPIC_API_KEY` secret, no `registerProvider` call needed — see `guide/models` in `pnpm flue docs`), not through AI Gateway. This is a deliberate, narrower exception than the orchestrator's gateway path — do not default other agents/subagents to Anthropic (direct or gated) without the same explicit call-out here. If unifying onto the AI-Gateway pattern later, update this note and `providers/anthropic-gateway.ts` together.
+  - **Workers AI** (`cloudflare/…`) — `techstack_prober` + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key.
+  - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator only — via the gateway's Anthropic endpoint (`providers/anthropic-gateway.ts`). Auth is `CF_AIG_TOKEN`.
+  - **Claude Sonnet 4.6** (`cloudflare-ai-gateway/…`) — MCP-backed or lower-stakes specialists (`signal_scout`, `contact_enricher`) — same `CF_AIG_TOKEN` gateway path. No `claude-sonnet-5` in pi-ai's catalog yet.
 
 ## Where things go
 

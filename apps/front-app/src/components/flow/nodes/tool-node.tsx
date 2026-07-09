@@ -9,7 +9,7 @@ export function ToolNode({ data, selected }: NodeProps<AppNode>) {
   return (
     <NodeShell
       data={data}
-      icon={isMcp ? "🔌" : "🔧"}
+      badge={isMcp ? "MC" : "TL"}
       accentClassName={
         isMcp
           ? "bg-fuchsia-500/20 text-fuchsia-300"

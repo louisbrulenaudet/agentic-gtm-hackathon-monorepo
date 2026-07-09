@@ -3,12 +3,15 @@ import { defineAgent, type AgentRouteHandler } from "@flue/runtime";
 import { Model } from "../enums/model";
 import { ThinkingLevel } from "../enums/thinking-level";
 import { connectSillageReadTools } from "../mcp/sillage";
+import prospectRanking from "../skills/prospect-ranking/SKILL.md" with { type: "skill" };
 import instructions from "./orchestrator.md" with { type: "markdown" };
 import { createContactEnricher } from "./subagents/contact-enricher";
 import { createContentCollector } from "./subagents/content-collector";
+import { createSignalScout } from "./subagents/signal-scout";
+import { createTechstackProber } from "./subagents/techstack-prober";
 
 export const description =
-  "Demo orchestrator: lorem ipsum dolor sit amet, delegates source collection to the content_collector subagent, contact enrichment to the contact_enricher subagent, and synthesizes a structured answer.";
+  "Agentic GTM orchestrator (Claude Opus 4.8): plans a prospect scan, delegates DNS tech-stack inference, Sillage signal scouting, and FullEnrich contact enrichment to per-domain specialists, then ranks accounts and writes vendor-tailored sales use cases.";
 
 /**
  * Durable-submission bounds for the orchestrator.
@@ -33,23 +36,33 @@ const ORCHESTRATOR_COMPACTION = {
   model: Model.GEMMA_4_26B_A4B_IT,
 } as const;
 
-// Exposes POST/GET /agents/orchestrator/:id (used by the eval harness
-// and conversational clients). Auth is enforced app-wide by the AGENT_API_KEY
-// guard on `/agents/*` in app.ts, so exposure stays a pass-through here.
+// Exposes POST/GET /agents/orchestrator/:id (used by the eval harness and
+// conversational clients). Hackathon: no auth guard — the browser SPA calls
+// this Worker directly behind a strict CORS allowlist (see app.ts).
 export const route: AgentRouteHandler = async (_c, next) => next();
 
 export default defineAgent<Env>(async () => {
-  const contentCollector = createContentCollector();
-  const contactEnricher = createContactEnricher();
-  // Read-only Sillage MCP tools (empty when SILLAGE_API_KEY is unset or the
-  // connection fails — the agent still runs without them).
+  // Read-only Sillage MCP tools, bound once here with the workspace bearer and
+  // handed to the signal_scout specialist that owns the integration. Empty when
+  // SILLAGE_API_KEY is unset or the connection fails — the scout then reports
+  // it has no signal source instead of breaking construction.
   const sillageTools = await connectSillageReadTools();
+
+  const techstackProber = createTechstackProber();
+  const signalScout = createSignalScout(sillageTools);
+  const contactEnricher = createContactEnricher();
+  const contentCollector = createContentCollector();
 
   return {
     model: Model.CLAUDE_OPUS_4_8,
     instructions,
-    subagents: [contentCollector, contactEnricher],
-    tools: sillageTools,
+    subagents: [
+      techstackProber,
+      signalScout,
+      contactEnricher,
+      contentCollector,
+    ],
+    skills: [prospectRanking],
     thinkingLevel: ThinkingLevel.MEDIUM,
     durability: ORCHESTRATOR_DURABILITY,
     compaction: ORCHESTRATOR_COMPACTION,

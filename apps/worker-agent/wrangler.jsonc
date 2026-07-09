@@ -42,6 +42,7 @@
   // `src/agents/orchestrator.ts`      -> `FlueOrchestratorAgent` (v1).
   // `src/workflows/sample-answer.ts`  -> `FlueSampleAnswerWorkflow` (v2).
   // `src/workflows/enrich-contacts.ts` -> `FlueEnrichContactsWorkflow` (v3).
+  // `src/workflows/prospect-scan.ts`  -> `FlueProspectScanWorkflow` (v4).
   "migrations": [
     {
       "tag": "v1",
@@ -54,6 +55,10 @@
     {
       "tag": "v3",
       "new_sqlite_classes": ["FlueEnrichContactsWorkflow"],
+    },
+    {
+      "tag": "v4",
+      "new_sqlite_classes": ["FlueProspectScanWorkflow"],
     },
   ],
   "observability": {

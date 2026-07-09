@@ -14,4 +14,6 @@ export enum FlowNodeKind {
   TOOL = "tool",
   /** A tool call served by an MCP server (`mcp__*`). */
   MCP_TOOL = "mcp_tool",
+  /** A Flue skill invocation (`operationKind: skill`). */
+  SKILL = "skill",
 }

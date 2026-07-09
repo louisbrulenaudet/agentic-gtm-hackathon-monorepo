@@ -12,26 +12,28 @@ Read the monorepo spec first: **[../../AGENTS.md → What We're Building](../../
 
 Flue patterns load from `.claude/rules/worker-agent.md` when editing `src/agents/**` or `src/workflows/**`. Load the `flue` skill for framework depth; the `sillage-help` / `sillage-api` skills for the Sillage integration.
 
-> **Target vs. today.** The **Target agent design** below is what we are building. **What runs today** is a placeholder Flue demo (`orchestrator` + `content_collector` → `{ answer, sources[] }`) that we evolve into the target — reuse its wiring (auth, idempotency, Durable Objects, providers) rather than rebuilding it.
+> **Status.** The full agent design below now **ships as the `prospect-scan` workflow** — the orchestrator + all three specialists + the DNS tool + the Sillage read tools are implemented. The `sample-answer` / `enrich-contacts` demos remain as scaffold (reuse their wiring: auth, idempotency, Durable Objects, providers).
 
-## Target agent design
+## Agent design
 
 ### Topology
 
-| Role | Slug | Kind | Model (target) | Job |
-|------|------|------|----------------|-----|
-| Orchestrator | `orchestrator` | agent (Durable Object) | **Claude Opus 4.8**, medium reasoning | Plan the scan, spawn sub-agents per domain, rank prospects, synthesize sales use cases |
-| Sub-agent | `techstack_prober` | subagent profile (no DO) | small/fast | Call the DNS/SPF tool → normalized tech-stack fingerprint |
-| Sub-agent | `signal_scout` | subagent profile (no DO) | mid | Call Sillage → commercial signals + candidate decision-makers |
-| Sub-agent | `contact_enricher` | subagent profile (no DO) | **implemented** — Claude Haiku 4.5 (Anthropic) | Call FullEnrich → verified email/phone per decision-maker |
+| Role | Slug | Kind | Model | Job |
+|------|------|------|-------|-----|
+| Orchestrator | `orchestrator` | agent (Durable Object) | **Claude Opus 4.8**, medium reasoning | Plan the scan, delegate per domain, rank prospects, synthesize sales use cases |
+| Sub-agent | `techstack_prober` | subagent profile (no DO) | **implemented** — Gemma 4 26B (Workers AI) | Call the DNS/SPF tool → normalized tech-stack fingerprint |
+| Sub-agent | `signal_scout` | subagent profile (no DO) | **implemented** — Claude Sonnet 4.6 (AI Gateway) | Call Sillage (read-only MCP) → commercial signals + candidate decision-makers |
+| Sub-agent | `contact_enricher` | subagent profile (no DO) | **implemented** — Claude Sonnet 4.6 (AI Gateway) | Call FullEnrich → verified email/phone per decision-maker |
 
 ### Integrations (tools & MCP)
 
 | Integration | Reached via | Auth | Used by |
 |-------------|-------------|------|---------|
-| DNS / SPF / MX resolver | custom Flue **tool** (`defineTool`, DNS-over-HTTPS) | none — key-less | `techstack_prober` |
-| Sillage (LinkedIn signals + org graph) | **MCP client** (`src/mcp/`) or REST | `SILLAGE_API_KEY` (`sk_live_…`) | `signal_scout` |
+| DNS / SPF / MX resolver | custom Flue **tool** `analyze_domain` (`src/tools/analyze-domain.ts`) → `worker-dns` RPC binding | none — key-less | `techstack_prober` |
+| Sillage (LinkedIn signals + org graph) | **MCP client** (`src/mcp/sillage.ts`), read-only allow-list | `SILLAGE_API_KEY` (`sk_live_…`) | `signal_scout` |
 | FullEnrich (email + phone) | REST tool (`defineTool`, `src/tools/full-enrich.ts`) | `FULLENRICH_API_KEY` | `contact_enricher` |
+
+Each specialist also loads a matching Flue **skill** (`src/skills/`) that encodes how to drive its tool well: `dns-fingerprint`, `sillage-signals`, `contact-enrichment`, and `prospect-ranking` (orchestrator synthesis).
 
 Bind authority (API keys, tenant) **in the tool**, never as a model-supplied parameter (Flue `tools.md`). Model-facing surfaces stay **read/query-oriented** — no credential creation or irreversible actions (see [guardrails.md](../../.claude/rules/guardrails.md)).
 
@@ -98,19 +100,23 @@ The `vendorPersona` on the request steers stage 4. Examples:
 
 ### Inference path
 
-The **orchestrator** runs **Claude Opus 4.8** routed through **Cloudflare AI Gateway** to **Anthropic** (caching + observability). It resolves from pi-ai's `cloudflare-ai-gateway` catalog (`Model.CLAUDE_OPUS_4_8` = `cloudflare-ai-gateway/claude-opus-4-8`); `src/providers/anthropic-gateway.ts` registers that provider, overriding the gateway base URL (`CF_ACCOUNT_ID` + `AI_GATEWAY_ID`) and passing `CF_AIG_TOKEN` as the `cf-aig-authorization` header. **No Anthropic key lives in the Worker** — AI Gateway supplies the upstream credentials via a stored provider key (BYOK) or Unified Billing credits. **Sub-agents + compaction** stay on the cheaper **Workers AI** models (`cloudflare/…`) through the `AI` binding (`src/providers/cloudflare-ai.ts`).
+The **orchestrator** runs **Claude Opus 4.8** routed through **Cloudflare AI Gateway** for planning, delegation, ranking, and synthesis. **Specialist subagents** that drive MCP or lighter tool workflows (`signal_scout`, `contact_enricher`) use **Claude Sonnet 4.6** on the same gateway path (`CF_AIG_TOKEN`) — enough reasoning for multi-tool flows without Opus cost. There is no `claude-sonnet-5` entry in pi-ai's gateway catalog yet; Sonnet 4.6 is the latest available. **DNS probing + compaction** stay on **Workers AI** (`cloudflare/…`) through the `AI` binding (`src/providers/cloudflare-ai.ts`).
 
-## What runs today (demo scaffold)
+## What runs today
 
 | Piece | Slug | Role |
 |-------|------|------|
-| Workflow | `sample-answer` | `POST /workflows/sample-answer` — validates input, runs orchestrator, validates output |
+| Workflow | `prospect-scan` | **The pipeline.** `POST /workflows/prospect-scan` — `{ domains[], vendorPersona, vendorName? }`. Fans out per domain: `techstack_prober` + `signal_scout` concurrently, then `contact_enricher` on the surfaced people, then the orchestrator ranks + writes use cases. Validated against `ProspectScanOutputSchema`. |
+| Subagent | `techstack_prober` | Calls `analyze_domain` (DNS/SPF via `worker-dns`), returns a `TechFingerprint` (no DO) — Gemma 4 26B, `dns-fingerprint` skill |
+| Subagent | `signal_scout` | Calls the read-only Sillage MCP tools, returns `{ companyName, decisionMakers, signals }` (no DO) — Claude Sonnet 4.6 (AI Gateway), `sillage-signals` skill |
+| Tool | `analyze_domain` | `src/tools/analyze-domain.ts` — resolves DNS/SPF/MX and fingerprints vendors via `env.DNS_WORKER.analyzeDomain`; key-less, read-only |
+| Workflow | `sample-answer` | *(demo)* `POST /workflows/sample-answer` — validates input, runs orchestrator, validates output |
 | Workflow | `enrich-contacts` | `POST /workflows/enrich-contacts` — validates a batch of named contacts, fans out one `contact_enricher` delegation per contact **concurrently** (`Promise.all` over `session.task(...)`), validates each result against `EnrichedContactSchema`. First full slice of the target `contact_enricher`. |
 | Agent | `orchestrator` | Plans, delegates, synthesizes (Durable Object) — **Claude Opus 4.8** via AI Gateway (Anthropic upstream); compaction stays on Workers AI |
 | Subagent | `content_collector` | Returns references + excerpts only (no DO) — placeholder for the GTM specialists |
-| Subagent | `contact_enricher` | Calls the `enrich_contact` tool, returns one strictly-typed `EnrichedContact` (no DO) — **Claude Haiku 4.5 (Anthropic)**, the app's one deliberate exception to Workers-AI-only (see `.claude/rules/worker-agent.md`) |
+| Subagent | `contact_enricher` | Calls the `enrich_contact` tool, returns one strictly-typed `EnrichedContact` (no DO) — Claude Sonnet 4.6 (AI Gateway) |
 | Tool | `enrich_contact` | `src/tools/full-enrich.ts` — submits + polls FullEnrich's bulk REST API for one contact; `FULLENRICH_API_KEY` bound in the tool, never model-supplied; degrades to a structured `error` field (not a thrown exception) when unset, unreachable, or no match is found |
-| MCP client | `sillage` | `src/mcp/sillage.ts` — `connectMcpServer` adapts Sillage's read-only `list_signals` into a Flue tool on the orchestrator; skipped when `SILLAGE_API_KEY` is unset. First slice of the target `signal_scout`. |
+| MCP client | `sillage` | `src/mcp/sillage.ts` — `connectMcpServer` adapts Sillage's read-only tools (allow-listed: `get_company`/`get_company_mapping`/`list_company_mappings`/`get_lead`/`get_persona`/`get_agents`/`list_signals`/`get_signal`/`get_signal_playbook`/`get_signal_run`) into Flue tools; connected once in the orchestrator factory and handed to `signal_scout`. Skipped when `SILLAGE_API_KEY` is unset. |
 
 ```mermaid
 flowchart LR
@@ -123,7 +129,7 @@ flowchart LR
   Orch -.->|"mcp__sillage__…list_signals (read-only)"| Sillage[(Sillage MCP)]
 
   Client -->|"POST /workflows/enrich-contacts<br/>{ contacts[] }"| WfEnrich[enrich-contacts]
-  WfEnrich -->|"session.task() per contact, concurrent"| Enricher[contact_enricher<br/>Claude Haiku 4.5]
+  WfEnrich -->|"session.task() per contact, concurrent"| Enricher[contact_enricher<br/>Claude Sonnet 4.6]
   Enricher -->|enrich_contact tool| FE[FullEnrich REST API]
 ```
 
@@ -133,26 +139,28 @@ flowchart LR
 apps/worker-agent/src/
 ├── app.ts                 # Hono: auth, idempotency, health, flue()
 ├── agents/
-│   ├── orchestrator.ts    # defineAgent + orchestrator.md
-│   └── subagents/         # content-collector, contact-enricher (defineAgentProfile)
-│                          #   → target: techstack-prober, signal-scout
+│   ├── orchestrator.ts    # defineAgent + orchestrator.md (Claude Opus 4.8, prospect-ranking skill)
+│   └── subagents/         # techstack-prober, signal-scout, contact-enricher, content-collector
 ├── workflows/
-│   ├── sample-answer.ts    # defineWorkflow + sample-answer.md (→ target: prospect-scan)
-│   └── enrich-contacts.ts  # defineWorkflow — concurrent contact_enricher fan-out per batch
+│   ├── prospect-scan.ts    # defineWorkflow — THE pipeline: per-domain fan-out + synthesis
+│   ├── sample-answer.ts    # defineWorkflow + sample-answer.md (demo)
+│   └── enrich-contacts.ts  # defineWorkflow — concurrent contact_enricher fan-out (demo)
 ├── tools/
+│   ├── analyze-domain.ts   # defineTool analyze_domain — DNS/SPF via env.DNS_WORKER RPC
 │   └── full-enrich.ts      # defineTool enrich_contact — FullEnrich bulk REST, valibot input/output
-│                            #   → target: analyze-domain.ts (DNS/SPF resolver; techstack_prober)
+├── skills/                 # dns-fingerprint, sillage-signals, contact-enrichment, prospect-ranking
 ├── dtos/                   # valibot schemas (Flue input/output slots)
+│   ├── prospect-scan/      # ProspectScanInput/Output, TechFingerprint, GtmSignal, RankedProspect, DNS mirror
 │   └── contact-enrichment/ # ContactQuerySchema, EnrichedContactSchema, batch wrappers
-├── providers/              # cloudflare-ai.ts (AI Gateway registration)
+├── providers/              # cloudflare-ai.ts, anthropic-gateway.ts
 ├── middlewares/            # require-api-key, idempotency, mutable-response
 ├── routes/                 # /, /health
 ├── enums/                  # Model, ThinkingLevel (worker-local)
-├── lib/                    # timing-safe-equal, full-enrich-client.ts, contact-task-message.ts
-└── mcp/                    # MCP clients — sillage.ts (connectMcpServer); FullEnrich stays REST (see above)
+├── lib/                    # prospect-scan-briefs, full-enrich-client, contact-task-message, timing-safe-equal
+└── mcp/                    # sillage.ts (connectMcpServer, read-only allow-list); FullEnrich stays REST
 ```
 
-Target additions (not yet present): `src/tools/analyze-domain.ts` (DNS/SPF resolver, service-bound to `worker-dns`) and the `techstack_prober` / `signal_scout` subagents. `wrangler.jsonc` already declares the `DNS_WORKER` service binding ahead of that implementation.
+All target pieces now exist: `src/tools/analyze-domain.ts` (DNS/SPF resolver, service-bound to `worker-dns`), the `techstack_prober` / `signal_scout` subagents, the `src/skills/**` skills, and the `src/workflows/prospect-scan.ts` workflow (`src/lib/prospect-scan-briefs.ts` holds its brief builders).
 
 ## Where to change things
 
@@ -162,8 +170,9 @@ Target additions (not yet present): `src/tools/analyze-domain.ts` (DNS/SPF resol
 | Sub-agent prompt / config | `src/agents/subagents/<name>.ts`, `.md` (+ pass to `subagents:` in `orchestrator.ts`) |
 | Workflow + brief | `src/workflows/<name>.ts`, `.md` (export `route`/`runs`, append a DO migration) |
 | Workflow input/output shapes | `src/dtos/**` (valibot — Flue slots) |
-| Custom tool (FullEnrich; target: DNS/SPF) | `src/tools/**` — `defineTool`, keep authority in the tool |
-| MCP client (Sillage) | `src/mcp/**` |
+| Tool-usage skill (per specialist) | `src/skills/<name>/SKILL.md` (+ pass to `skills:` in the agent/subagent) |
+| Custom tool (DNS/SPF, FullEnrich) | `src/tools/**` — `defineTool`, keep authority in the tool |
+| MCP client (Sillage) | `src/mcp/**` (read-only allow-list) |
 | HTTP middleware / app wiring | `src/middlewares/**`, `src/app.ts` |
 | Models | `src/enums/model.ts`, `src/providers/cloudflare-ai.ts` |
 | Bindings / vars / DO migrations | `wrangler.jsonc` → rebuild with `pnpm build` |
@@ -179,8 +188,9 @@ Durable Objects (append-only migrations in `wrangler.jsonc` — never rewrite an
 | `v1` | `FlueRegistry`, `FlueOrchestratorAgent` |
 | `v2` | `FlueSampleAnswerWorkflow` |
 | `v3` | `FlueEnrichContactsWorkflow` |
+| `v4` | `FlueProspectScanWorkflow` |
 
-Adding the `prospect-scan` workflow or a new orchestrator DO means appending a new tag (`v4`, …). Sub-agents create **no** DO — `contact_enricher` added no migration.
+Adding a new workflow or orchestrator DO means appending a new tag (`v5`, …). Sub-agents create **no** DO — `techstack_prober`, `signal_scout`, and `contact_enricher` added no migration.
 
 ## Environment
 
@@ -196,9 +206,9 @@ Copy `apps/worker-agent/.dev.vars.example` → `.dev.vars` (gitignored). Never c
 | `CF_ACCOUNT_ID` | var | Cloudflare account id — builds the AI Gateway Anthropic endpoint URL (`src/providers/anthropic-gateway.ts`) |
 | `ENVIRONMENT` | var | `production` / `dev` |
 | `CF_AIG_TOKEN` | secret | AI Gateway authorization token (`cf-aig-authorization`) for the orchestrator's Claude Opus 4.8 calls. **Required** for the orchestrator; the gateway holds the Anthropic credentials (BYOK / Unified Billing), so no Anthropic key is stored here |
-| `SILLAGE_API_KEY` | secret | Sillage (`sk_live_…`) — static bearer for the Sillage MCP client (`src/mcp/sillage.ts`). Optional; unset → orchestrator runs without the Sillage read tools |
+| `SILLAGE_API_KEY` | secret | Sillage (`sk_live_…`) — static bearer for the Sillage MCP client (`src/mcp/sillage.ts`). Optional; unset → `signal_scout` runs with no Sillage tools and reports it has no signal source |
 | `FULLENRICH_API_KEY` | secret | FullEnrich bearer key for the `enrich_contact` tool (`src/tools/full-enrich.ts`). Optional; unset → the tool returns a structured `error` instead of calling FullEnrich |
-| `ANTHROPIC_API_KEY` | secret | Used by `contact_enricher`'s model (`anthropic/claude-haiku-4-5`, Flue's built-in provider) — reached **directly**, unlike the orchestrator's Claude Opus 4.8 above (which goes through AI Gateway / `CF_AIG_TOKEN` instead) |
+| `ANTHROPIC_API_KEY` | secret | **Unused** — all Claude models route through AI Gateway (`CF_AIG_TOKEN`). Kept in `.dev.vars.example` only for local experiments with direct `anthropic/...` models. |
 
 ## HTTP surface
 
@@ -206,7 +216,7 @@ Copy `apps/worker-agent/.dev.vars.example` → `.dev.vars` (gitignored). Never c
 |---------------|------|-------------|
 | `POST /workflows/sample-answer` | none | *(demo)* `{ question }` → `{ answer, sources[] }`; `?wait=result` for sync |
 | `POST /workflows/enrich-contacts` | none | `{ contacts[] }` → `{ contacts: EnrichedContact[] }`; one `contact_enricher` delegation per contact, run concurrently; `?wait=result` for sync |
-| `POST /workflows/prospect-scan` | none | **target** — `{ domains[], vendorPersona }` → ranked prospects + sales use cases |
+| `POST /workflows/prospect-scan` | none | `{ domains[], vendorPersona, vendorName? }` → `{ prospects[], summary }` (ranked prospects + tailored sales use cases); `?wait=result` for sync |
 | `GET /runs/:runId` | none | Workflow run detail |
 | `POST /agents/orchestrator/:id` | none | Conversational agent (`?wait=result` for sync) |
 | `GET /agents/orchestrator/:id` | none | SSE stream |
@@ -232,7 +242,7 @@ pnpm --filter worker-agent ci       # lint + format + check-types
 - Worker-local enums in `src/enums/`; shared HTTP headers in `@repo/enums-common`.
 - Do not duplicate wire schemas from `@repo/dtos-common` unless they cross an app boundary — workflow DTOs here are Flue-internal (valibot).
 - Give each sub-agent only the tools it needs; keep credentials in tools, not in model arguments.
-- Default every agent/subagent to a Workers AI model (`cloudflare/...`, no API key). `contact_enricher` is the one deliberate exception (`anthropic/claude-haiku-4-5`) — see `.claude/rules/worker-agent.md` before adding another.
+- Default new subagents to Workers AI (`cloudflare/...`) or Claude Sonnet 4.6 via AI Gateway for MCP/tool specialists. Reserve Opus for the orchestrator only.
 - Run `make ci` from the repo root before merging.
 
 ## Contribution

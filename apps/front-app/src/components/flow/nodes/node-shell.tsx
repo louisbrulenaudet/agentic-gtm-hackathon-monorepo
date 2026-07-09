@@ -1,6 +1,7 @@
 import { FlowNodeStatus } from "@enums/flow-node-status";
 import { Handle, Position } from "@xyflow/react";
 import type { FlowNodeData } from "@/dtos/flow-graph";
+import { buildNodeTooltip } from "@/lib/flow/preview";
 import { formatDuration } from "@/lib/flow/summarize";
 
 /** Border/ring per lifecycle status. */
@@ -19,10 +20,12 @@ const STATUS_DOT: Record<FlowNodeStatus, string> = {
   [FlowNodeStatus.FAILED]: "bg-rose-400",
 };
 
+const MAX_VISIBLE_PREVIEWS = 3;
+
 export type NodeShellProps = Readonly<{
   data: FlowNodeData;
-  /** Kind glyph shown in the header badge. */
-  icon: string;
+  /** Two-letter kind badge shown in the header. */
+  badge: string;
   /** Kind accent classes for the header badge. */
   accentClassName: string;
   selected?: boolean;
@@ -35,21 +38,30 @@ export type NodeShellProps = Readonly<{
  */
 export function NodeShell({
   data,
-  icon,
+  badge,
   accentClassName,
   selected,
 }: NodeShellProps) {
+  const previewSource =
+    data.previewFields.length > 0 ? data.previewFields : data.fields;
+  const visiblePreviews = previewSource.slice(0, MAX_VISIBLE_PREVIEWS);
+  const tooltip = buildNodeTooltip(data.description, visiblePreviews);
+  const hasErrorPreview = visiblePreviews.some(
+    (entry) => entry.label === "error" || entry.label === "erreur",
+  );
+
   return (
     <div
-      className={`flow-node flex size-full flex-col gap-1 overflow-hidden rounded-xl border bg-slate-900/85 px-3 py-2.5 text-left shadow-lg backdrop-blur-sm ${STATUS_RING[data.status]} ${selected ? "ring-2 ring-indigo-400/60" : ""}`}
+      className={`flow-node group relative flex size-full min-h-0 cursor-pointer flex-col gap-1 overflow-hidden rounded-xl border bg-slate-900/85 px-3 py-2.5 text-left shadow-lg backdrop-blur-sm ${STATUS_RING[data.status]} ${selected ? "ring-2 ring-indigo-400/60" : ""}`}
+      title={tooltip}
     >
       <Handle type="target" position={Position.Left} />
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <span
-          className={`flex size-6 shrink-0 items-center justify-center rounded-md text-sm ${accentClassName}`}
+          className={`flex size-6 shrink-0 items-center justify-center rounded-md text-[0.6rem] font-bold tracking-tight ${accentClassName}`}
           aria-hidden
         >
-          {icon}
+          {badge}
         </span>
         <span className="truncate text-sm font-semibold text-slate-100">
           {data.label}
@@ -60,21 +72,42 @@ export function NodeShell({
         />
       </div>
 
-      {data.subtitle ? (
-        <span className="truncate text-[0.68rem] font-medium uppercase tracking-wide text-slate-400">
+      {data.description ? (
+        <span className="shrink-0 truncate text-[0.68rem] text-slate-400">
+          {data.description}
+        </span>
+      ) : data.subtitle ? (
+        <span className="shrink-0 truncate text-[0.68rem] font-medium uppercase tracking-wide text-slate-400">
           {data.subtitle}
         </span>
       ) : null}
 
-      {data.fields.length > 0 ? (
-        <dl className="mt-0.5 flex min-h-0 flex-col gap-0.5 overflow-hidden text-[0.7rem] text-slate-300">
-          {data.fields.slice(0, 2).map((entry) => (
-            <div key={entry.label} className="flex gap-1 overflow-hidden">
+      {visiblePreviews.length > 0 ? (
+        <dl className="mt-0.5 flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden text-[0.7rem] text-slate-300">
+          {visiblePreviews.map((entry) => (
+            <div
+              key={entry.label}
+              className="flex min-h-0 gap-1 overflow-hidden"
+            >
               <dt className="shrink-0 text-slate-500">{entry.label}:</dt>
-              <dd className="truncate text-slate-300">{entry.value}</dd>
+              <dd
+                className={`line-clamp-2 min-w-0 ${
+                  entry.label === "error" || entry.label === "erreur"
+                    ? "text-rose-300"
+                    : "text-slate-300"
+                }`}
+              >
+                {entry.value}
+              </dd>
             </div>
           ))}
         </dl>
+      ) : null}
+
+      {data.status === FlowNodeStatus.FAILED && !hasErrorPreview ? (
+        <span className="text-[0.68rem] text-rose-300">
+          Échec — voir détail
+        </span>
       ) : null}
 
       {data.durationMs === undefined ? null : (
@@ -82,6 +115,19 @@ export function NodeShell({
           {formatDuration(data.durationMs)}
         </span>
       )}
+
+      {tooltip ? (
+        <div
+          role="tooltip"
+          className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-max max-w-[280px] -translate-x-1/2 rounded-lg border border-slate-600/80 bg-slate-950/95 px-2.5 py-2 text-[0.68rem] leading-snug text-slate-200 shadow-xl group-hover:block motion-reduce:group-hover:block"
+        >
+          {tooltip.split("\n").map((line) => (
+            <p key={line} className="truncate">
+              {line}
+            </p>
+          ))}
+        </div>
+      ) : null}
 
       <Handle type="source" position={Position.Right} />
     </div>
