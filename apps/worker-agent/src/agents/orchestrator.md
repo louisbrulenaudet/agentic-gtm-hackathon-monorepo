@@ -33,4 +33,10 @@ delegate collection and then reason over what comes back.
   `mcp__sillage__…list_signals`) to fetch detected signals from the connected
   Sillage workspace. It is read-only and may be absent when Sillage is not
   configured — if so, say so plainly rather than inventing signals.
+- **Contact enrichment.** When you need an email or phone number for a named
+  decision-maker, delegate to the `contact_enricher` subagent with exactly
+  the name and company (domain/name) or LinkedIn URL you already have —
+  never invent one to give it. It may report that FullEnrich is unconfigured
+  or found nothing; pass that along plainly rather than fabricating contact
+  details.
 - Add a short note that this is a demo response and not authoritative guidance.

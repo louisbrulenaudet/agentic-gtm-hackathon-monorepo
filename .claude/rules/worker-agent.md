@@ -24,9 +24,10 @@ paths:
 
 ## Inference & observability
 
-- Two providers, both observable through **AI Gateway** (`AI_GATEWAY_ID` var):
-  - **Workers AI** (`cloudflare/…`) — subagents + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key.
+- Three providers are in play:
+  - **Workers AI** (`cloudflare/…`) — subagents + compaction — via the `AI` binding (`providers/cloudflare-ai.ts`); no external key. This remains the default for any new agent/subagent.
   - **Claude Opus 4.8** (`cloudflare-ai-gateway/…`) — the orchestrator — via the gateway's Anthropic endpoint (`providers/anthropic-gateway.ts`). Auth is the `CF_AIG_TOKEN` gateway token; the Anthropic credential lives in the gateway (BYOK / Unified Billing), never in the Worker.
+  - **Claude Haiku 4.5** (`anthropic/…`) — the `contact_enricher` subagent (`src/agents/subagents/contact-enricher.ts`) only — reached **directly** via Flue's built-in `anthropic/...` provider (`ANTHROPIC_API_KEY` secret, no `registerProvider` call needed — see `guide/models` in `pnpm flue docs`), not through AI Gateway. This is a deliberate, narrower exception than the orchestrator's gateway path — do not default other agents/subagents to Anthropic (direct or gated) without the same explicit call-out here. If unifying onto the AI-Gateway pattern later, update this note and `providers/anthropic-gateway.ts` together.
 
 ## Where things go
 
@@ -34,8 +35,9 @@ paths:
 | --- | --- |
 | Add/edit an agent or subagent | `src/agents/**` (`defineAgent` / `defineAgentProfile` + the matching `.md` prompt) |
 | Add/edit a workflow | `src/workflows/**` (`defineWorkflow` + `.md` brief; export `route`/`runs`, append a DO migration) |
-| Future MCP client | `src/mcp/` (currently empty scaffold) |
+| Add/edit a tool (external API/DB call) | `src/tools/**` (`defineTool`, valibot `parameters`); bind credentials in code, never as a model-supplied argument |
+| MCP client | `src/mcp/` (e.g. `sillage.ts`) |
 | Change routes / middleware | `src/routes/**`, `src/middlewares/**`, `src/app.ts` |
-| Change AI provider / models | `src/providers/cloudflare-ai.ts` + `src/enums/model.ts` |
+| Change AI provider / models | `src/providers/cloudflare-ai.ts`, `src/providers/anthropic-gateway.ts` + `src/enums/model.ts` |
 
 Verify with `pnpm --filter <worker-name> run check-types` and `pnpm --filter <worker-name> test`. See [testing.md](testing.md) for evals.

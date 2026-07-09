@@ -31,6 +31,12 @@
       "new_sqlite_classes": [
         "FlueSampleAnswerWorkflow"
       ]
+    },
+    {
+      "tag": "v3",
+      "new_sqlite_classes": [
+        "FlueEnrichContactsWorkflow"
+      ]
     }
   ],
   "observability": {
@@ -41,6 +47,12 @@
     {
       "binding": "IDEMPOTENCY_KV",
       "id": "d98720f3dd544e6fa52321411bf2ca67"
+    }
+  ],
+  "services": [
+    {
+      "binding": "DNS_WORKER",
+      "service": "worker-dns"
     }
   ],
   "vars": {
@@ -55,6 +67,10 @@
       {
         "name": "FLUE_ORCHESTRATOR_AGENT",
         "class_name": "FlueOrchestratorAgent"
+      },
+      {
+        "name": "FLUE_ENRICH_CONTACTS_WORKFLOW",
+        "class_name": "FlueEnrichContactsWorkflow"
       },
       {
         "name": "FLUE_SAMPLE_ANSWER_WORKFLOW",

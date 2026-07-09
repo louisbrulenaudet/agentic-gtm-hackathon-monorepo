@@ -35,5 +35,20 @@ declare namespace Cloudflare {
      * typed as possibly `undefined`.
      */
     SILLAGE_API_KEY?: string;
+
+    /**
+     * FullEnrich API key, sent as a static `Authorization: Bearer` to
+     * `https://app.fullenrich.com/api/v1/contact/enrich/bulk` by
+     * `src/lib/full-enrich-client.ts`. Bound in the `enrich_contact` tool
+     * (`src/tools/full-enrich.ts`), never accepted as a model-supplied
+     * parameter. Optional — when unset the `enrich_contact` tool returns a "not
+     * configured" message instead of calling FullEnrich.
+     */
+    FULLENRICH_API_KEY?: string;
+
+    // Note: ANTHROPIC_API_KEY is NOT declared here. Flue's built-in
+    // `anthropic/...` provider reads it directly at runtime (see `guide/models`
+    // in `pnpm flue docs`) — this app's own code never accesses
+    // `env.ANTHROPIC_API_KEY` itself, so it needs no local type declaration.
   }
 }

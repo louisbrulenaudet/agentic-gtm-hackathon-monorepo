@@ -58,6 +58,13 @@ export function RunGraphPage({ runId }: RunGraphPageProps) {
         <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs tabular-nums text-slate-400">
           {eventCount} events
         </span>
+        <Link
+          to="/reports/$runId"
+          params={{ runId }}
+          className="rounded-full bg-orange-500/15 px-2.5 py-1 text-xs font-medium text-orange-200 hover:bg-orange-500/25"
+        >
+          report
+        </Link>
       </header>
 
       <div className="relative min-h-0 flex-1">

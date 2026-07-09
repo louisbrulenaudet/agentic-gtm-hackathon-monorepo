@@ -1,7 +1,8 @@
-/* App shell: the SPA fills the viewport so the run-graph canvas has a real
-   height to render into (React Flow needs a sized parent). */
+/* App shell: the SPA fills the viewport so the run graph and report pages have
+   a real height to render into. */
 #root {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
+  width: 100%;
 }

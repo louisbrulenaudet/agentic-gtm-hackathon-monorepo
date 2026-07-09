@@ -13,16 +13,24 @@ describe("Model enum", () => {
     expect(MODELS.toSorted()).toEqual(Object.values(Model).toSorted());
   });
 
-  it("namespaces every model under a Cloudflare provider", () => {
-    // Workers AI models resolve through the `cloudflare` binding provider;
-    // Claude models route through the `cloudflare-ai-gateway` catalog provider
-    // (Anthropic upstream via AI Gateway).
+  it("namespaces every model under a known Flue provider", () => {
+    // cloudflare/...            = Workers AI binding (default, no API key).
+    // cloudflare-ai-gateway/... = Claude Opus 4.8 for the orchestrator, via AI Gateway.
+    // anthropic/...             = Flue's built-in Anthropic provider, direct —
+    //   the one deliberate exception, scoped to contact_enricher only.
+    // See .claude/rules/worker-agent.md.
     for (const model of MODELS) {
       expect(
         model.startsWith("cloudflare/") ||
-          model.startsWith("cloudflare-ai-gateway/"),
+          model.startsWith("cloudflare-ai-gateway/") ||
+          model.startsWith("anthropic/"),
       ).toBe(true);
     }
+  });
+
+  it("scopes the direct-Anthropic exception to contact_enricher's model only", () => {
+    const direct = MODELS.filter((model) => model.startsWith("anthropic/"));
+    expect(direct).toEqual([Model.CLAUDE_HAIKU_4_5]);
   });
 
   it("defaults the orchestrator to a known model", () => {

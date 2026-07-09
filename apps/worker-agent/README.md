@@ -16,14 +16,19 @@ flowchart TD
   Orch --> Collector[content_collector subagent]
   Collector --> Orch
   Orch --> AI[Workers AI]
+
+  Client2[Client] -->|"POST /workflows/enrich-contacts<br/>{ contacts[] }"| WfE[enrich-contacts workflow]
+  WfE -->|"session.task() per contact, concurrent"| Enricher[contact_enricher subagent]
+  Enricher -->|enrich_contact tool| FE[FullEnrich REST API]
 ```
 
-| Component | Slug | Model (Workers AI) |
-|-----------|------|--------------------|
-| Orchestrator | `orchestrator` | Kimi K2.6 |
-| Subagent | `content_collector` | Gemma 4 26B |
+| Component | Slug | Model |
+|-----------|------|-------|
+| Orchestrator | `orchestrator` | Kimi K2.6 (Workers AI) |
+| Subagent | `content_collector` | Gemma 4 26B (Workers AI) |
+| Subagent | `contact_enricher` | Claude Haiku 4.5 (Anthropic — the app's one non-Workers-AI model, see [AGENTS.md](./AGENTS.md)) |
 
-_This is the demo wiring. The target GTM topology — orchestrator (Claude Opus 4.8) + `techstack_prober` / `signal_scout` / `contact_enricher` sub-agents over the DNS-SPF tool, Sillage, and FullEnrich — is specified in [AGENTS.md → Target agent design](./AGENTS.md#target-agent-design)._
+_The orchestrator/content_collector chain and enrich-contacts/contact_enricher chain are the two implemented slices. The full target GTM topology — orchestrator (Claude Opus 4.8) + `techstack_prober` / `signal_scout` sub-agents over the DNS-SPF tool and Sillage — is specified in [AGENTS.md → Target agent design](./AGENTS.md#target-agent-design)._
 
 ## Endpoints
 
@@ -32,6 +37,7 @@ All routes except `/` and `/health` require `AGENT_API_KEY` (`X-API-Key` or `Aut
 | Method / path | Description |
 |---------------|-------------|
 | `POST /workflows/sample-answer` | Main entry — `{ question }` → `{ answer, sources[] }` |
+| `POST /workflows/enrich-contacts` | `{ contacts[] }` → `{ contacts: EnrichedContact[] }`, enriched concurrently via FullEnrich |
 | `GET /runs/:runId` | Workflow run status |
 | `POST /agents/orchestrator/:id` | Drive the agent directly |
 | `GET /agents/orchestrator/:id` | Agent event stream |
@@ -66,21 +72,24 @@ Source config: `wrangler.jsonc`. **`flue build`** injects the Worker entrypoint 
 | `AI_GATEWAY_ID` | Gateway id (`default`) |
 | `AGENT_API_KEY` | Inbound API key (secret / `.dev.vars`) |
 | `SILLAGE_API_KEY` | Sillage API key (secret / `.dev.vars`) |
-| `FULL_ENRICH_API_KEY` | FullEnrich API key (secret / `.dev.vars`) |
+| `FULLENRICH_API_KEY` | FullEnrich API key for the `enrich_contact` tool (secret / `.dev.vars`) |
+| `ANTHROPIC_API_KEY` | `contact_enricher`'s model (`anthropic/claude-haiku-4-5`, secret / `.dev.vars`) |
 
-Durable Objects: `v1` → `FlueRegistry` + `FlueOrchestratorAgent`; `v2` → `FlueSampleAnswerWorkflow`.
+Durable Objects: `v1` → `FlueRegistry` + `FlueOrchestratorAgent`; `v2` → `FlueSampleAnswerWorkflow`; `v3` → `FlueEnrichContactsWorkflow`.
 
 ## Project layout
 
 ```
 src/
-├── agents/          orchestrator + content_collector subagent
-├── workflows/       sample-answer
-├── dtos/sample/     valibot workflow schemas
-├── middlewares/     API key guard, idempotency
-├── providers/       Workers AI registration
-├── routes/          health + service descriptor
-└── mcp/             reserved for a future MCP client
+├── agents/                    orchestrator + content_collector, contact_enricher subagents
+├── workflows/                 sample-answer, enrich-contacts
+├── tools/                     enrich_contact (defineTool, FullEnrich REST)
+├── dtos/sample/, contact-enrichment/  valibot workflow/tool schemas
+├── lib/                       full-enrich-client, contact-task-message, timing-safe-equal
+├── middlewares/                API key guard, idempotency
+├── providers/                  Workers AI registration
+├── routes/                     health + service descriptor
+└── mcp/                        sillage.ts (connectMcpServer)
 ```
 
 See [AGENTS.md](./AGENTS.md) for the full agent guide and [../../AGENTS.md](../../AGENTS.md) for monorepo conventions.

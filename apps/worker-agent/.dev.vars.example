@@ -29,7 +29,6 @@ AGENT_API_KEY=
 # orchestrator runs without the Sillage read tools. One key = one workspace.
 # Production: `wrangler secret put SILLAGE_API_KEY`.
 SILLAGE_API_KEY=
-FULL_ENRICH_API_KEY=
 
 # Cloudflare AI Gateway authorization token — a Cloudflare API token with the
 # AI Gateway "Run" permission. Sent as `cf-aig-authorization: Bearer <token>` to
@@ -40,6 +39,25 @@ FULL_ENRICH_API_KEY=
 # https://dash.cloudflare.com/profile/api-tokens and enable BYOK/credits on the
 # gateway. Production: `wrangler secret put CF_AIG_TOKEN`.
 CF_AIG_TOKEN=
+
+# FullEnrich API key, sent as a static `Authorization: Bearer` to
+# https://app.fullenrich.com/api/v1/contact/enrich/bulk by the
+# `enrich_contact` tool (src/tools/full-enrich.ts). Generate at
+# https://app.fullenrich.com/app/settings/api. Optional: when unset, the
+# `contact_enricher` subagent cannot enrich contacts and reports so plainly.
+# Production: `wrangler secret put FULLENRICH_API_KEY`.
+FULLENRICH_API_KEY=
+
+# Anthropic API key for the `contact_enricher` subagent's model
+# (anthropic/claude-haiku-4-5, src/agents/subagents/contact-enricher.ts) —
+# Flue's built-in `anthropic/...` provider, reached DIRECTLY (unlike the
+# orchestrator's Claude Opus 4.8 above, which goes through AI Gateway/
+# CF_AIG_TOKEN instead). No custom provider registration needed, just this
+# credential. See .claude/rules/worker-agent.md for why this subagent is the
+# one direct-Anthropic exception. Get a key at
+# https://console.anthropic.com/settings/keys.
+# Production: `wrangler secret put ANTHROPIC_API_KEY`.
+ANTHROPIC_API_KEY=
 
 # Workers AI inference (subagents + compaction) runs through the `AI` binding
 # under the Worker's own account — no key needed. The non-secret `AI_GATEWAY_ID`
