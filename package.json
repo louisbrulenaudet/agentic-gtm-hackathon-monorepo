@@ -1,0 +1,42 @@
+{
+  "name": "agentic-gtm",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "check": "turbo run lint format",
+    "check-types": "turbo run check-types",
+    "ci": "turbo run lint format check-types",
+    "format": "turbo run format:fix",
+    "format:fix": "oxfmt .",
+    "lint": "turbo run lint:fix",
+    "lint:fix": "oxlint --no-error-on-unmatched-pattern --type-aware --fix .",
+    "types": "turbo run types --filter='./apps/*'",
+    "update": "pnpm update --recursive",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "26.1.0",
+    "cloc": "2.6.0-cloc",
+    "cloudflare": "^6.5.0",
+    "eslint-plugin-better-tailwindcss": "^4.6.1",
+    "git-format-staged": "^4.0.1",
+    "husky": "^9.1.7",
+    "oxfmt": "^0.58.0",
+    "oxlint": "^1.73.0",
+    "oxlint-tsgolint": "^0.24.0",
+    "tailwindcss": "^4.3.2",
+    "turbo": "^2.10.4",
+    "typescript": "7.0.1-rc",
+    "wrangler": "^4.108.0"
+  },
+  "packageManager": "pnpm@11.10.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

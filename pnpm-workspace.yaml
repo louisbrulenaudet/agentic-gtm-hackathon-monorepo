@@ -1,0 +1,36 @@
+packages:
+  - apps/*
+  - packages/*
+
+overrides:
+  "@types/node": "26.1.0"
+
+auditConfig:
+  ignoreCves: []
+  ignoreGhsas: []
+
+ignoredBuiltDependencies:
+  - esbuild
+  - sharp
+  - workerd
+
+onlyBuiltDependencies:
+  - protobufjs
+
+minimumReleaseAge: 480
+
+minimumReleaseAgeExclude:
+  - '@cloudflare/*'
+  - wrangler
+  - miniflare
+  - typescript
+
+allowBuilds:
+  "@google/genai": true
+  "@mongodb-js/zstd": true
+  core-js-pure: true
+  esbuild: true
+  node-liblzma: true
+  protobufjs: true
+  sharp: true
+  workerd: true
