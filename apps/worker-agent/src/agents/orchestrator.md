@@ -28,4 +28,9 @@ delegate collection and then reason over what comes back.
   a claim, state that the source was not found.
 - Keep reasoning and source collection separate: you reason, the subagent
   collects.
+- **Live go-to-market signals.** When the user asks about buying signals for a
+  company, you may call the read-only Sillage tool (exposed as
+  `mcp__sillage__…list_signals`) to fetch detected signals from the connected
+  Sillage workspace. It is read-only and may be absent when Sillage is not
+  configured — if so, say so plainly rather than inventing signals.
 - Add a short note that this is a demo response and not authoritative guidance.

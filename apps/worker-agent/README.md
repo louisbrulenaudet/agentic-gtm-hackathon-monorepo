@@ -65,6 +65,8 @@ Source config: `wrangler.jsonc`. **`flue build`** injects the Worker entrypoint 
 | `IDEMPOTENCY_KV` | Idempotency replay cache |
 | `AI_GATEWAY_ID` | Gateway id (`default`) |
 | `AGENT_API_KEY` | Inbound API key (secret / `.dev.vars`) |
+| `SILLAGE_API_KEY` | Sillage API key (secret / `.dev.vars`) |
+| `FULL_ENRICH_API_KEY` | FullEnrich API key (secret / `.dev.vars`) |
 
 Durable Objects: `v1` → `FlueRegistry` + `FlueOrchestratorAgent`; `v2` → `FlueSampleAnswerWorkflow`.
 

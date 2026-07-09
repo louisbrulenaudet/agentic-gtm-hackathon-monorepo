@@ -16,5 +16,13 @@ declare namespace Cloudflare {
      * is unset.
      */
     AGENT_API_KEY: string;
+
+    /**
+     * Sillage workspace key (`sk_live_...`), sent as a static `Authorization:
+     * Bearer` to the Sillage MCP server by `src/mcp/sillage.ts`. Optional —
+     * when unset the orchestrator runs without the Sillage read tools, so it is
+     * typed as possibly `undefined`.
+     */
+    SILLAGE_API_KEY?: string;
   }
 }

@@ -211,6 +211,7 @@ Per-app commands: see each app's `AGENTS.md` or `Makefile`.
 | Hook scripts (shared) | [`hooks/`](hooks/) | [`hooks/`](hooks/) |
 | Subagents | [`.claude/agents/`](.claude/agents/) | [`.cursor/agents/`](.cursor/agents/) |
 | Slash commands | — | [`.cursor/commands/`](.cursor/commands/) |
+| MCP servers | [`.mcp.json`](.mcp.json) | [`.cursor/mcp.json`](.cursor/mcp.json) |
 | Deep skills | [`.agents/skills/`](.agents/skills/) | same (shared) |
 | Nested app guides | `CLAUDE.md` per app/package | `AGENTS.md` per app/package |
 

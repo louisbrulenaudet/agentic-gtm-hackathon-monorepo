@@ -2,6 +2,7 @@ import { defineAgent, type AgentRouteHandler } from "@flue/runtime";
 
 import { Model } from "../enums/model";
 import { ThinkingLevel } from "../enums/thinking-level";
+import { connectSillageReadTools } from "../mcp/sillage";
 import instructions from "./orchestrator.md" with { type: "markdown" };
 import { createContentCollector } from "./subagents/content-collector";
 
@@ -38,11 +39,15 @@ export const route: AgentRouteHandler = async (_c, next) => next();
 
 export default defineAgent<Env>(async () => {
   const contentCollector = createContentCollector();
+  // Read-only Sillage MCP tools (empty when SILLAGE_API_KEY is unset or the
+  // connection fails — the agent still runs without them).
+  const sillageTools = await connectSillageReadTools();
 
   return {
     model: Model.KIMI_K2_6,
     instructions,
     subagents: [contentCollector],
+    tools: sillageTools,
     thinkingLevel: ThinkingLevel.MEDIUM,
     durability: ORCHESTRATOR_DURABILITY,
     compaction: ORCHESTRATOR_COMPACTION,

@@ -105,6 +105,7 @@ Target model calls route through **AI Gateway** (caching + observability), with 
 | Workflow | `sample-answer` | `POST /workflows/sample-answer` — validates input, runs orchestrator, validates output |
 | Agent | `orchestrator` | Plans, delegates, synthesizes (Durable Object) — currently Kimi K2.6 on Workers AI |
 | Subagent | `content_collector` | Returns references + excerpts only (no DO) — placeholder for the GTM specialists |
+| MCP client | `sillage` | `src/mcp/sillage.ts` — `connectMcpServer` adapts Sillage's read-only `list_signals` into a Flue tool on the orchestrator; skipped when `SILLAGE_API_KEY` is unset. First slice of the target `signal_scout`. |
 
 ```mermaid
 flowchart LR
@@ -113,6 +114,7 @@ flowchart LR
   Orch --> Collector[content_collector]
   Collector --> Orch
   Orch --> AI[Workers AI]
+  Orch -.->|"mcp__sillage__…list_signals (read-only)"| Sillage[(Sillage MCP)]
 ```
 
 ## Structure
@@ -132,7 +134,7 @@ apps/worker-agent/src/
 ├── routes/                # /, /health
 ├── enums/                 # Model, ThinkingLevel (worker-local)
 ├── lib/                   # timing-safe-equal
-└── mcp/                   # scaffold for MCP clients (→ Sillage, FullEnrich)
+└── mcp/                   # MCP clients — sillage.ts (connectMcpServer); FullEnrich → target
 ```
 
 Target additions (not yet present): `src/tools/` for the DNS/SPF resolver and FullEnrich REST tool.
@@ -175,7 +177,7 @@ Copy `apps/worker-agent/.dev.vars.example` → `.dev.vars` (gitignored). Never c
 | `IDEMPOTENCY_KV` | KV | `Idempotency-Key` replay cache (24h) + per-domain result cache |
 | `AI_GATEWAY_ID` | var | Gateway id (`default` = implicit gateway) |
 | `ENVIRONMENT` | var | `production` / `dev` |
-| `SILLAGE_API_KEY` | secret | **target** — Sillage v2 (`sk_live_…`) for `signal_scout` |
+| `SILLAGE_API_KEY` | secret | Sillage (`sk_live_…`) — static bearer for the Sillage MCP client (`src/mcp/sillage.ts`). Optional; unset → orchestrator runs without the Sillage read tools |
 | `FULLENRICH_API_KEY` | secret | **target** — FullEnrich for `contact_enricher` |
 | `ANTHROPIC_API_KEY` | secret | **target** — Anthropic upstream via AI Gateway for Claude Opus 4.8 |
 
