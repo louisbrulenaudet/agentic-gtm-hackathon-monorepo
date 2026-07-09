@@ -1,0 +1,23 @@
+# Local development overrides for `flue dev` / `wrangler dev`.
+# Copy this file to `.dev.vars` and replace the placeholder values.
+# `.dev.vars` is gitignored — never commit real secrets.
+#
+# How environments work here: `flue build` flattens `wrangler.jsonc` into a
+# single-environment deploy config (no wrangler `env.*` blocks), so the `vars`
+# in `wrangler.jsonc` ARE the production values. This file is the dev counterpart:
+# anything set here overrides those `vars` during local dev.
+#
+# Docs: https://developers.cloudflare.com/workers/configuration/secrets/
+
+ENVIRONMENT=dev
+
+# Inbound API key THIS Worker requires on /agents/*, /workflows/* and
+# /runs/:runId (sent as `X-API-Key` or `Authorization: Bearer`).
+# Requests are refused with 503 while it is unset — generate one with
+# `openssl rand -base64 32`. The eval harness reads it from the AGENT_API_KEY
+# environment variable. Production: `wrangler secret put AGENT_API_KEY`.
+AGENT_API_KEY=
+
+# No AI provider key is required: Workers AI inference runs through the `AI`
+# binding (and AI Gateway) under the Worker's own account. `AI_GATEWAY_ID` is a
+# non-secret var and lives in wrangler.jsonc.

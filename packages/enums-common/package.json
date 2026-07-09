@@ -6,7 +6,9 @@
   "sideEffects": false,
   "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./api/content-type": "./src/api/content-type.ts",
+    "./api/http-header": "./src/api/http-header.ts"
   },
   "scripts": {
     "check": "oxfmt --check . && oxlint --no-error-on-unmatched-pattern --type-aware .",

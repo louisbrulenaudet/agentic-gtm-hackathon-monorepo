@@ -1,0 +1,43 @@
+{
+  "name": "worker-agent",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Flue AI agent on Cloudflare Workers: a demo orchestrator that delegates content collection to subagents, running Workers AI inference through an AI Gateway.",
+  "type": "module",
+  "scripts": {
+    "build": "flue build --target cloudflare",
+    "check-types": "tsc --noEmit",
+    "ci": "pnpm run lint && pnpm run format && pnpm run check-types",
+    "deploy": "pnpm run build && wrangler deploy --config dist/worker_agent/wrangler.json",
+    "dev": "flue dev --target cloudflare",
+    "evals": "vitest run --config vitest.evals.config.ts",
+    "evals:json": "vitest run --config vitest.evals.config.ts --reporter=vitest-evals/reporter --reporter=json --outputFile.json=vitest-results.json",
+    "format": "oxfmt --check .",
+    "format:fix": "oxfmt .",
+    "lint": "oxlint --no-error-on-unmatched-pattern .",
+    "lint:fix": "oxlint --no-error-on-unmatched-pattern --fix .",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "types": "wrangler types -c ./wrangler.jsonc"
+  },
+  "dependencies": {
+    "@flue/runtime": "1.0.0-beta.7",
+    "@hono/zod-validator": "^0.8.0",
+    "@repo/enums-common": "workspace:*",
+    "agents": "^0.17.3",
+    "hono": "^4.12.27",
+    "valibot": "^1.4.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@flue/cli": "1.0.0-beta.7",
+    "@flue/sdk": "1.0.0-beta.7",
+    "@repo/typescript-config": "workspace:*",
+    "vitest": "^4.1.9",
+    "vitest-evals": "^0.14.0",
+    "wrangler": "^4.106.0"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

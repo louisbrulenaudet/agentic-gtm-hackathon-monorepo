@@ -6,12 +6,12 @@ paths:
 
 # Agent Worker (Flue) Rules
 
-`apps/worker-agent` is a Cloudflare Worker built on the **Flue** framework (`@flue/runtime`, `@flue/sdk`, `@flue/cli`) plus the `agents` SDK. It is a *consumer* of this repo's MCP server, not part of it. For the framework itself, load the `flue` skill.
+`apps/worker-agent` is a Cloudflare Worker built on the **Flue** framework (`@flue/runtime`, `@flue/sdk`, `@flue/cli`) plus the `agents` SDK. For the framework itself, load the `flue` skill.
 
 ## Build & deploy (do not confuse source vs generated)
 
 - `wrangler.jsonc` is the **source** config. `flue build --target cloudflare` reads it and writes the deployable **`dist/worker_agent/wrangler.json`** — deploy that generated file, **never** the source. The generated manifest and everything under `dist/**` are outputs: never hand-edit them (see [guardrails.md](guardrails.md)); change the source and rebuild.
-- Durable Objects and the Worker entrypoint are **injected by `flue build`** from `src/agents/**` and `src/workflows/**`. When you add an agent or workflow that needs a DO, **append a new migration tag** (never rewrite or renumber an existing one): `FlueLegalOrchestratorAgent` is `v1`, `FlueLegalAnswerWorkflow` is `v2`. Subagents create no DO.
+- Durable Objects and the Worker entrypoint are **injected by `flue build`** from `src/agents/**` and `src/workflows/**`. When you add an agent or workflow that needs a DO, **append a new migration tag** (never rewrite or renumber an existing one): `FlueOrchestratorAgent` is `v1`, `FlueSampleAnswerWorkflow` is `v2`. Subagents create no DO.
 
 ## Validation
 
@@ -21,14 +21,9 @@ paths:
 
 - The `AGENT_API_KEY` secret guards `/agents/*`, `/workflows/*`, `/events`, and `/runs/:runId` (timing-safe compare; accepts `X-API-Key` or `Authorization: Bearer`). `/` and `/health` stay public. When the secret is unset, guarded routes answer **503** — keep this fail-closed; never default to permissive. Reuse `middlewares/require-api-key.ts` / `agent-api-key-guard.ts`; do not roll new auth. It is a machine-to-machine surface — no CORS middleware.
 
-## MCP integration
-
-- `src/mcp/haiku-mcp.ts` connects to the MCP server **from inside the orchestrator's agent factory** (Durable Object context) — never at module scope (module-scope I/O binds to the wrong context). A failed connection **throws** so the run fails fast and durability retries, instead of answering without grounding tools.
-- `HAIKU_MCP_API_KEY` must match the mcp Worker's `MCP_API_KEY` (static side-door). Tools surface to the subagent as `mcp__haiku__*`.
-
 ## Inference & observability
 
-- All model calls go through the `AI` binding (Workers AI) routed via AI Gateway `haiku-gateway` (`providers/cloudflare-ai.ts`) — no external LLM provider key.
+- All model calls go through the `AI` binding (Workers AI) routed via AI Gateway (`providers/cloudflare-ai.ts`, `AI_GATEWAY_ID` var) — no external LLM provider key.
 - `lib/event-collector.ts` wires Flue's `observe()` hook to project high-level events into `EVENTS_KV` (24h TTL) plus an isolate-local ring.
 
 ## Where things go
@@ -37,7 +32,7 @@ paths:
 | --- | --- |
 | Add/edit an agent or subagent | `src/agents/**` (`defineAgent` / `defineAgentProfile` + the matching `.md` prompt) |
 | Add/edit a workflow | `src/workflows/**` (`defineWorkflow` + `.md` brief; export `route`/`runs`, append a DO migration) |
-| Change the MCP connection | `src/mcp/haiku-mcp.ts` |
+| Future MCP client | `src/mcp/` (currently empty scaffold) |
 | Change routes / middleware | `src/routes/**`, `src/middlewares/**`, `src/app.ts` |
 | Change AI provider / models | `src/providers/cloudflare-ai.ts` + `src/enums/model.ts` |
 

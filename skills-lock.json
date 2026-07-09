@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "flue": {
+      "source": "louisbrulenaudet/flue-skills",
+      "sourceType": "github",
+      "skillPath": "skills/flue/SKILL.md",
+      "computedHash": "cba9e24660585df8ab31d3fbf8f7a24b0f1c863a2ac04bfa2627193322fdaf81"
+    },
     "git-commit": {
       "source": "github/awesome-copilot",
       "sourceType": "github",
@@ -10,6 +16,30 @@
       "source": "yusukebe/hono-skill",
       "sourceType": "github",
       "computedHash": "220e5e1b12bbaeec49ec362b6e2262d77632d0536e9758bba9acbbc323fef990"
+    },
+    "sillage-api": {
+      "source": "sillage-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/sillage-api/SKILL.md",
+      "computedHash": "874f699f084f9552ece2e7ece89a795c91092088cd260452cf910823057b9594"
+    },
+    "sillage-help": {
+      "source": "sillage-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/sillage-help/SKILL.md",
+      "computedHash": "fd1b3b5cf4a4f7c82e449140d6270f1d6be9ea8204c8f43db700bd902bfe103b"
+    },
+    "sillage-manage-workspace": {
+      "source": "sillage-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/sillage-manage-workspace/SKILL.md",
+      "computedHash": "800c49ab07451541c2bc1bb3226b713fbca89f196f1f5d7b0d0514f0556d5d7b"
+    },
+    "sillage-onboarding": {
+      "source": "sillage-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/sillage-onboarding/SKILL.md",
+      "computedHash": "752f2d812d269381b2f1350b8f6e8863c58bdf1497036472d9f50fbca944b53a"
     },
     "tanstack-config": {
       "source": "tanstack-skills/tanstack-skills",

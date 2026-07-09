@@ -1,0 +1,18 @@
+{
+  // Test sources live outside `src/`, so they are not part of the worker build
+  // or the app's `check-types`. They are typed against the Workers runtime
+  // globals (KVNamespace, Response, crypto) — NOT @types/node, which would
+  // collide with the generated runtime types. Run with `tsc -p tests`.
+  "extends": "@repo/typescript-config/workers.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "lib": ["ES2023", "WebWorker"],
+    "types": []
+  },
+  "include": [
+    "./**/*.ts",
+    "../vitest.config.ts",
+    "../vitest.evals.config.ts",
+    "../worker-configuration.d.ts"
+  ]
+}

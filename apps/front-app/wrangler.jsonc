@@ -1,5 +1,6 @@
 {
   "name": "front-app",
+  "account_id": "b664c6731df8a734cb99254f1991e102",
   "compatibility_date": "2026-07-08",
   "assets": {
     "not_found_handling": "single-page-application",

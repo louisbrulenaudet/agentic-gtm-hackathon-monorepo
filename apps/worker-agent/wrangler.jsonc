@@ -1,0 +1,88 @@
+/**
+ * Source Wrangler config for the `worker-agent` Flue app.
+ *
+ * IMPORTANT: do NOT deploy this file directly. `flue build --target cloudflare`
+ * reads it, injects the generated Worker entrypoint + per-agent Durable Object
+ * bindings, and writes the deployable `dist/worker_agent/wrangler.json`.
+ * `pnpm run deploy` deploys that generated config.
+ *
+ * Docs: https://flueframework.com/docs/guide/targets/cloudflare/
+ *       https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "worker-agent",
+  "account_id": "b664c6731df8a734cb99254f1991e102",
+  "compatibility_date": "2026-06-01",
+  // `nodejs_compat` is required: the Flue runtime relies on Node.js APIs.
+  "compatibility_flags": ["nodejs_compat"],
+  // The hot path is almost entirely outbound (Workers AI binding), so let
+  // Cloudflare co-locate the isolate near those upstreams.
+  "placement": {
+    "mode": "smart",
+  },
+  "dev": {
+    "port": 8788,
+    "inspector_port": 0,
+  },
+  "send_metrics": false,
+  // Workers AI binding. Flue routes `cloudflare/...` model calls through this
+  // binding, and (see src/providers/cloudflare-ai.ts) through an AI Gateway for
+  // caching + observability. No provider API key is needed — auth and billing
+  // follow the Worker's account.
+  "ai": {
+    "binding": "AI",
+    "remote": true,
+  },
+  // Each Flue agent/workflow becomes a Durable Object that must be listed in a
+  // uniquely-tagged `new_sqlite_classes` migration. Always include FlueRegistry.
+  // Subagents (src/agents/subagents/*) are NOT discovered as agents and create
+  // no Durable Object — they are imported by their parent. When you add a new
+  // top-level agent/workflow, append a new migration tag (never edit v1).
+  // `src/agents/orchestrator.ts`     -> `FlueOrchestratorAgent` (v1).
+  // `src/workflows/sample-answer.ts` -> `FlueSampleAnswerWorkflow` (v2).
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["FlueRegistry", "FlueOrchestratorAgent"],
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["FlueSampleAnswerWorkflow"],
+    },
+  ],
+  "observability": {
+    "enabled": true,
+    // Explicit: keep 100% of invocations in Workers Logs. Lower this if log
+    // volume ever becomes a cost concern.
+    "head_sampling_rate": 1,
+  },
+  // Application KV namespace (create once with
+  // `wrangler kv namespace create <BINDING>` and paste the id):
+  //
+  // - IDEMPOTENCY_KV — response cache for the `Idempotency-Key` middleware on
+  //   POST /workflows/* (src/middlewares/idempotency.ts); cached 2xx responses
+  //   self-expire after 24h.
+  "kv_namespaces": [
+    {
+      "binding": "IDEMPOTENCY_KV",
+      "id": "d98720f3dd544e6fa52321411bf2ca67",
+    },
+  ],
+  // PRODUCTION configuration. `flue build --target cloudflare` FLATTENS this
+  // source config into a single-environment `dist/worker_agent/wrangler.json`
+  // and `pnpm run deploy` ships THAT — there is no `--env` to select. Local-dev
+  // overrides live in `.dev.vars` (loaded by `flue dev` / `wrangler dev`).
+  "vars": {
+    "ENVIRONMENT": "production",
+    // AI Gateway id that Workers AI inference is routed through. Create it in
+    // the Cloudflare dashboard (AI -> AI Gateway). Use "default" to use the
+    // implicit gateway with no extra setup.
+    "AI_GATEWAY_ID": "default",
+  },
+  // Secrets (declare in src/types/secrets-env.d.ts; `wrangler secret put` for
+  // prod, `.dev.vars` locally):
+  // - AGENT_API_KEY — inbound key required on /agents/*, /workflows/* and
+  //   /runs/:runId. Rate limiting / budget caps are enforced at the edge
+  //   (Cloudflare WAF rules) and in AI Gateway, not in Worker code.
+}
