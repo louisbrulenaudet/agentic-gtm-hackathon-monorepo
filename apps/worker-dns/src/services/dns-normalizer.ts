@@ -40,7 +40,10 @@ export function extractSpfInfo(txtRecords: string[]): SpfInfo {
   const includes = dedupe(
     [...raw.matchAll(/include:(\S+)/gi)]
       .map((match) => match[1])
-      .filter((value): value is string => value !== undefined),
+      .filter((value): value is string => value !== undefined)
+      // Hostnames are case-insensitive per DNS spec; lowercase so fingerprint
+      // matching doesn't miss a record written as "Include:SendGrid.net".
+      .map((value) => value.toLowerCase()),
   );
 
   return { raw, includes };

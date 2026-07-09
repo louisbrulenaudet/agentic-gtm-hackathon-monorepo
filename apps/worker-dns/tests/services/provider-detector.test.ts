@@ -66,4 +66,53 @@ describe("detectProviders", () => {
       }),
     );
   });
+
+  it("does not false-positive on a hostname that merely contains a pattern as a substring", () => {
+    // "notcloudflare.com" contains "cloudflare.com" as a raw substring but is
+    // not on a DNS label boundary — must not match.
+    const providers = detectProviders({
+      ns: ["ns1.notcloudflare.com"],
+      mxExchanges: [],
+      txt: [],
+      spfIncludes: [],
+    });
+
+    expect(providers.some((provider) => provider.vendor === "Cloudflare")).toBe(
+      false,
+    );
+  });
+
+  it("matches a provider-specific suffix glued directly onto the distinctive label", () => {
+    // AWS Route 53 nameservers look like ns-1472.awsdns-56.org — "awsdns" is
+    // immediately followed by "-56", not a dot.
+    const providers = detectProviders({
+      ns: ["ns-1472.awsdns-56.org"],
+      mxExchanges: [],
+      txt: [],
+      spfIncludes: [],
+    });
+
+    expect(providers).toContainEqual(
+      expect.objectContaining({
+        vendor: "AWS Route 53",
+        category: ProviderCategory.DNS_PROVIDER,
+      }),
+    );
+  });
+
+  it("detects a marketing automation vendor from an SPF include", () => {
+    const providers = detectProviders({
+      ns: [],
+      mxExchanges: [],
+      txt: [],
+      spfIncludes: ["spf.brevo.com"],
+    });
+
+    expect(providers).toContainEqual(
+      expect.objectContaining({
+        vendor: "Brevo",
+        category: ProviderCategory.MARKETING_AUTOMATION,
+      }),
+    );
+  });
 });

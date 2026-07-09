@@ -61,4 +61,9 @@ describe("extractSpfInfo", () => {
       includes: [],
     });
   });
+
+  it("lowercases includes since hostnames are case-insensitive", () => {
+    const spf = extractSpfInfo(["v=spf1 Include:SPF.Brevo.COM ~all"]);
+    expect(spf.includes).toEqual(["spf.brevo.com"]);
+  });
 });

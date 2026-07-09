@@ -64,7 +64,9 @@ apps/worker-dns/src/
 - Kebab-case filenames; functions ≤ 100 lines; no `any`.
 - No HTTP endpoints by design — do not add a `fetch` handler. If a future need requires one (e.g. a health check), justify it explicitly; the default is RPC-only.
 - Provider detection is data-driven: never hardcode a one-off vendor check inside `provider-detector.ts` — add a fingerprint entry instead.
-- Substring matching is intentionally loose; prefer `ConfidenceLevel.HIGH` only for patterns effectively unique to one vendor (e.g. a named domain-verification token), `MEDIUM` for common/short substrings.
+- Matching differs by source: `ns` / `mxExchange` / `spfInclude` patterns are hostnames matched on a DNS label boundary (`hostMatches` in `provider-detector.ts` — pattern `cloudflare.com` matches `ns1.cloudflare.com`, not `notcloudflare.com`); `txt` patterns are plain substrings of a domain-verification value (they aren't hostnames).
+- Only add a fingerprint you can verify against the vendor's own documentation — an unverifiable guess is worse than no entry. If a vendor's only real signal lives on a dedicated DNS sub-label (e.g. `_stripe-verification.<domain>`), it cannot be detected by this pipeline (single apex TXT query only) — do not add a fingerprint for it; see the exclusion list at the top of `provider-fingerprints.ts`.
+- Prefer `ConfidenceLevel.HIGH` only for patterns effectively unique to one vendor (e.g. a named domain-verification token), `MEDIUM` when the pattern is shared infra, regional, or a less common path.
 - `src/index.ts` only validates the request and calls `services/analyze-domain.ts` — do not grow it.
 
 ## Commands

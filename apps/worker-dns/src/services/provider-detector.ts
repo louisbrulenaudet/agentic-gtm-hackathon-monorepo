@@ -31,7 +31,7 @@ export function detectProviders(input: DetectionInput): DetectedProvider[] {
   for (const fingerprint of PROVIDER_FINGERPRINTS) {
     for (const value of valuesForSource(input, fingerprint.source)) {
       const matchedPattern = fingerprint.patterns.find((pattern) =>
-        value.includes(pattern),
+        matches(fingerprint.source, value, pattern),
       );
       if (matchedPattern === undefined) {
         continue;
@@ -41,6 +41,54 @@ export function detectProviders(input: DetectionInput): DetectedProvider[] {
   }
 
   return [...detections.values()];
+}
+
+/**
+ * `ns` / `mxExchange` / `spfInclude` values are hostnames, so a pattern must
+ * line up on a DNS label boundary (e.g. pattern `cloudflare.com` matches
+ * `ns1.cloudflare.com` but not `notcloudflare.com`). The final pattern label
+ * may be a prefix of the matching value label, to allow provider-specific
+ * suffixes glued on without a dot (e.g. pattern `awsdns` matches label
+ * `awsdns-56` in `ns-1472.awsdns-56.org`).
+ *
+ * `txt` values are arbitrary domain-verification strings, not hostnames, so
+ * they use plain substring matching instead.
+ */
+function matches(
+  source: FingerprintSource,
+  value: string,
+  pattern: string,
+): boolean {
+  return source === "txt"
+    ? value.includes(pattern)
+    : hostMatches(value, pattern);
+}
+
+function hostMatches(value: string, pattern: string): boolean {
+  const valueLabels = value.split(".");
+  const patternLabels = pattern.split(".");
+  const lastPatternIndex = patternLabels.length - 1;
+
+  for (
+    let offset = 0;
+    offset <= valueLabels.length - patternLabels.length;
+    offset++
+  ) {
+    const allLabelsMatch = patternLabels.every((patternLabel, index) => {
+      const valueLabel = valueLabels[offset + index];
+      if (valueLabel === undefined) {
+        return false;
+      }
+      return index === lastPatternIndex
+        ? valueLabel.startsWith(patternLabel)
+        : valueLabel === patternLabel;
+    });
+    if (allLabelsMatch) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function valuesForSource(

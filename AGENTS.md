@@ -161,6 +161,7 @@ Queue-consuming workers use a dual-handler layout: `handlers/request.ts`, `handl
 |---------|----------|--------|
 | `front-app` | **5174** | Vite / `package.json` |
 | `worker-agent` | **8788** | `wrangler.jsonc` → `dev.port` |
+| `worker-dns` | **8720** | `wrangler.jsonc` → `dev.port` |
 
 Reserved ranges: ORM 8700–8710, app workers 8720–8729, webhooks 8760–8769, frontends 5170–5179. `worker-agent` uses **8788** (Flue dev).
 
@@ -227,6 +228,7 @@ See [`.cursor/README.md`](.cursor/README.md) for a quick index of the Cursor set
 |-------|-------|--------------|
 | React SPA | [apps/front-app/AGENTS.md](apps/front-app/AGENTS.md) | [apps/front-app/CLAUDE.md](apps/front-app/CLAUDE.md) |
 | Flue agent Worker | [apps/worker-agent/AGENTS.md](apps/worker-agent/AGENTS.md) | [apps/worker-agent/CLAUDE.md](apps/worker-agent/CLAUDE.md) |
+| DNS tech-stack inference (RPC) | [apps/worker-dns/AGENTS.md](apps/worker-dns/AGENTS.md) | [apps/worker-dns/CLAUDE.md](apps/worker-dns/CLAUDE.md) |
 | Zod DTOs | [packages/dtos-common/AGENTS.md](packages/dtos-common/AGENTS.md) | [packages/dtos-common/CLAUDE.md](packages/dtos-common/CLAUDE.md) |
 | Shared enums | [packages/enums-common/AGENTS.md](packages/enums-common/AGENTS.md) | [packages/enums-common/CLAUDE.md](packages/enums-common/CLAUDE.md) |
 | TS presets | [packages/typescript-config/AGENTS.md](packages/typescript-config/AGENTS.md) | [packages/typescript-config/CLAUDE.md](packages/typescript-config/CLAUDE.md) |
