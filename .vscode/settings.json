@@ -98,7 +98,6 @@
     "**/.env.local": true,
     "**/.env.development": true,
     "**/.env.test": true,
-    "**/.env.production": true
   },
   "explorer.sortOrder": "foldersNestsFiles",
   "explorer.compactFolders": true,
@@ -244,6 +243,7 @@
     "rgba",
     "robotstxt",
     "schemaorg",
+    "schemeless",
     "serviceworker",
     "setext",
     "setstate",

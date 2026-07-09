@@ -9,7 +9,7 @@
     "check-types": "tsc --noEmit",
     "ci": "pnpm run lint && pnpm run format && pnpm run check-types",
     "deploy": "pnpm run build && wrangler deploy --config dist/worker_agent/wrangler.json",
-    "dev": "flue dev --target cloudflare",
+    "dev": "flue dev --target cloudflare --port 8788",
     "evals": "vitest run --config vitest.evals.config.ts",
     "evals:json": "vitest run --config vitest.evals.config.ts --reporter=vitest-evals/reporter --reporter=json --outputFile.json=vitest-results.json",
     "format": "oxfmt --check .",

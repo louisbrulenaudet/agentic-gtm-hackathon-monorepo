@@ -11,21 +11,45 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig, loadEnv } from "vite";
+import { DEV_API_BASE_URL, PROD_API_BASE_URL } from "./src/config/api-origin";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
 const analyzeBundle = process.env.ANALYZE === "true";
 const repoRoot = path.resolve(appDir, "../..");
-const productionEnvKeys = ["VITE_API_BASE_URL"] as const;
 
-function isPlaceholderOrigin(value: string): boolean {
+// Resolve the API origin baked into a build: an explicit `VITE_API_BASE_URL`
+// override (shell env / `.env*`) wins, otherwise the mode's baked-in default
+// from `src/config/api-origin.ts` (same source `env.ts` uses at runtime, so the
+// bundle, this build guard, and the generated CSP all agree).
+function resolveApiBaseUrl(mode: string): string {
+  const override = loadEnv(mode, appDir, "VITE_").VITE_API_BASE_URL;
+  return (
+    override || (mode === "production" ? PROD_API_BASE_URL : DEV_API_BASE_URL)
+  );
+}
+
+// A production origin is rejected when it is not a well-formed absolute
+// http(s) URL with a real host, or is an obvious placeholder. This also
+// catches a schemeless value (e.g. `localhost:8788`), which `new URL()`
+// silently parses as a custom scheme with an empty host — yielding a `null`
+// origin in the CSP instead of a hard failure.
+function isInvalidProductionOrigin(value: string): boolean {
+  let url: URL;
   try {
-    const hostname = new URL(value).hostname;
-    return (
-      hostname.endsWith(".example.com") || hostname.endsWith(".your-domain.com")
-    );
+    url = new URL(value);
   } catch {
     return true;
   }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return true;
+  }
+  if (!url.hostname) {
+    return true;
+  }
+  return (
+    url.hostname.endsWith(".example.com") ||
+    url.hostname.endsWith(".your-domain.com")
+  );
 }
 
 function assertProductionOriginEnv(mode: string, command: string): void {
@@ -34,23 +58,12 @@ function assertProductionOriginEnv(mode: string, command: string): void {
     return;
   }
 
-  const env = loadEnv(mode, appDir, "VITE_");
-  const missing = productionEnvKeys.filter((key) => !env[key]);
-  if (missing.length > 0) {
+  const apiBaseUrl = resolveApiBaseUrl(mode);
+  if (isInvalidProductionOrigin(apiBaseUrl)) {
     throw new Error(
-      `Missing production frontend env: ${missing.join(", ")}. ` +
-        "Set them in apps/front-app/.env.production or the deploy environment.",
-    );
-  }
-
-  const placeholders = productionEnvKeys.filter((key) =>
-    env[key] ? isPlaceholderOrigin(env[key]) : false,
-  );
-  if (placeholders.length > 0) {
-    throw new Error(
-      `Production frontend env contains placeholder origins: ${placeholders.join(
-        ", ",
-      )}.`,
+      `Production frontend API origin is invalid or a placeholder: ${apiBaseUrl}. ` +
+        "It must be an absolute http(s) URL. Fix PROD_API_BASE_URL in " +
+        "src/config/api-origin.ts, or correct/unset VITE_API_BASE_URL.",
     );
   }
 }
@@ -93,15 +106,9 @@ function generatedHeadersPlugin(mode: string, command: string) {
         return;
       }
 
-      const env = loadEnv(mode, appDir, "VITE_");
-      const apiBaseUrl = env.VITE_API_BASE_URL;
-      if (!apiBaseUrl) {
-        return;
-      }
-
       writeFileSync(
         path.resolve(appDir, "dist/_headers"),
-        cspHeaders(apiBaseUrl),
+        cspHeaders(resolveApiBaseUrl(mode)),
       );
     },
   };

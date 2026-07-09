@@ -9,5 +9,13 @@ import { apiBaseUrl } from "@/config/env";
  * build dropped the API-key guard, so the browser calls the Worker directly
  * over a CORS-allowlisted origin. Used by the run-stream hook and the run
  * query-options — never construct a second client (it would not share state).
+ *
+ * `fetch` is passed explicitly, bound to `globalThis`: the SDK stores it as an
+ * instance field and calls it as a method (`this.fetchImpl(...)`), which strips
+ * the `Window` receiver that the browser's native `fetch` requires and throws
+ * `TypeError: Illegal invocation`. A pre-bound reference sidesteps that.
  */
-export const flueClient: FlueClient = createFlueClient({ baseUrl: apiBaseUrl });
+export const flueClient: FlueClient = createFlueClient({
+  baseUrl: apiBaseUrl,
+  fetch: globalThis.fetch.bind(globalThis),
+});

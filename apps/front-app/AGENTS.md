@@ -5,7 +5,7 @@
 `front-app` is the **React SPA** for the monorepo: **Vite**, **Tailwind CSS v4**, deployed as static assets + SPA routing on **Cloudflare Workers**. Communicates with **`worker-api` over HTTP only** — no service bindings.
 
 - **Dev**: `http://localhost:5174`
-- **API**: `worker-api` at `http://localhost:8725` (via `src/config/env.ts`)
+- **API**: `worker-agent` Flue Worker — `http://localhost:8788` in dev, the deployed Worker in production (resolved in `src/config/env.ts` from `src/config/api-origin.ts`)
 
 React, routing, and query patterns load from `.claude/rules/` when editing `src/**` (`react.md`, `tanstack-router.md`, `tanstack-query.md`, `frontend-architecture.md`). Use skills for depth.
 
@@ -58,13 +58,16 @@ flowchart LR
 
 | Variable | Purpose |
 |---------|---------|
-| `VITE_API_BASE_URL` | `worker-api` base URL; defaults to `http://localhost:8725` in dev |
+| `VITE_API_BASE_URL` | **Optional** override of the `worker-agent` origin. Defaults are baked in per build mode (`src/config/api-origin.ts`): `http://localhost:8788` in dev, the deployed Worker in production — so `make dev` and `make deploy` work with **no env file** on any machine or CI. |
 
-`VITE_*` vars are **inlined at build time** — changing the API URL requires rebuild + redeploy.
+`VITE_*` vars are **inlined at build time** — changing the API URL requires rebuild + redeploy. `src/config/api-origin.ts` is the one source of truth for the default origins, imported by both `src/config/env.ts` (runtime) and `vite.config.ts` (the production build guard + generated CSP `connect-src`). A production build **fails** if the resolved origin is not an absolute `http(s)` URL.
+
+Only set `VITE_API_BASE_URL` to point at a *different* backend (staging, a personal deployment). Put it in `.env.local` / `.env.production.local` or the shell — **never in `.env`**, which loads in every mode and would leak one environment's origin into the other (this is what breaks a local `make deploy`).
 
 ```bash
-cp .env.example .env.local              # local overrides
-cp .env.production.example .env.production   # production builds
+# Only needed to override the baked-in defaults:
+cp .env.example .env.local              # dev override
+cp .env.production.example .env.production   # production override
 ```
 
 ## Local Development

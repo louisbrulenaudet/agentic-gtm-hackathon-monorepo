@@ -36,10 +36,10 @@ import {
 } from '@flue/runtime/cloudflare/internal';
 import { registerApiProvider, registerProvider } from '@flue/runtime';
 
-import * as handler_orchestrator_0 from "/Users/leoarsenin/agentic-gtm-hackathon-monorepo/apps/worker-agent/src/agents/orchestrator.ts";
-import * as workflow_sample_answer_0 from "/Users/leoarsenin/agentic-gtm-hackathon-monorepo/apps/worker-agent/src/workflows/sample-answer.ts";
+import * as handler_orchestrator_0 from "/Users/louisbrulenaudet/Documents/Développement informatique/Agentic GTM hackathon/apps/worker-agent/src/agents/orchestrator.ts";
+import * as workflow_sample_answer_0 from "/Users/louisbrulenaudet/Documents/Développement informatique/Agentic GTM hackathon/apps/worker-agent/src/workflows/sample-answer.ts";
 
-import userApp from "/Users/leoarsenin/agentic-gtm-hackathon-monorepo/apps/worker-agent/src/app.ts";
+import userApp from "/Users/louisbrulenaudet/Documents/Développement informatique/Agentic GTM hackathon/apps/worker-agent/src/app.ts";
 
 
 
