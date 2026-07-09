@@ -1,12 +1,10 @@
 # worker-agent
 
-Flue agent Worker for the monorepo: a small **orchestrator → subagent → workflow** demo on Cloudflare Workers. It accepts a question, delegates research to a `content_collector` subagent, and returns a structured `{ answer, sources[] }` response validated against valibot schemas.
+The **Agentic GTM** engine — a **Flue** agent Worker where a **Claude-orchestrated** agent turns a batch of company **domain names** into a **ranked list of prospects with vendor-tailored sales use cases**. Concurrently, per domain, it infers the technical stack from DNS/SPF, surfaces buying signals and decision-makers from LinkedIn (**Sillage**), and enriches those people with email/phone (**FullEnrich**) — then the orchestrator (**Claude Opus 4.8**) ranks and drafts the pitch.
 
-Prompts use placeholder copy — replace them when you implement a real use case. Inference runs on **Workers AI** through the `AI` binding and AI Gateway (no external LLM API key).
+> **Status:** what ships today is a placeholder Flue demo — an **orchestrator → subagent → workflow** chain that accepts a question, delegates to a `content_collector` subagent, and returns a structured `{ answer, sources[] }` (Workers-AI models, no external LLM key). It is the scaffold we evolve into the target above. The full design lives in **[AGENTS.md](./AGENTS.md)** and **[../../AGENTS.md](../../AGENTS.md)**.
 
 **Local dev:** `http://localhost:8788` — see [Getting started](#getting-started).
-
-Agent-oriented details: [AGENTS.md](./AGENTS.md).
 
 ## Architecture
 
@@ -24,6 +22,8 @@ flowchart TD
 |-----------|------|--------------------|
 | Orchestrator | `orchestrator` | Kimi K2.6 |
 | Subagent | `content_collector` | Gemma 4 26B |
+
+_This is the demo wiring. The target GTM topology — orchestrator (Claude Opus 4.8) + `techstack_prober` / `signal_scout` / `contact_enricher` sub-agents over the DNS-SPF tool, Sillage, and FullEnrich — is specified in [AGENTS.md → Target agent design](./AGENTS.md#target-agent-design)._
 
 ## Endpoints
 

@@ -8,6 +8,37 @@
 
 Agentic GTM is a production-oriented monorepo for go-to-market automation: pnpm workspaces, Turborepo, Cloudflare Workers, Hono, React, Vite, and Tailwind. Backend Workers communicate via service bindings; frontends call backend services over HTTP.
 
+## What It Does
+
+A sales team submits a **list of company domain names**. Agentic GTM runs a **Claude-orchestrated** pipeline that, concurrently for each domain, infers the company's technical stack from DNS, surfaces buying signals and decision-makers from LinkedIn, enriches those people with direct contact details, and returns a **ranked list of prospects with vendor-tailored sales use cases**.
+
+- **Tech-stack inference** — a custom, key-less tool resolves **NS / MX / SPF / TXT** records to fingerprint the CDN/proxy, mail provider, CRM, SSO/IdP, and marketing SaaS a company runs, **from the domain name alone**. (e.g. *Is this prospect already on Cloudflare? Do they run HubSpot or Salesforce?*)
+- **Signals + org graph** — [**Sillage**](https://getsillage.com) extracts commercial signals and reconstructs the org graph to identify the decision-makers worth engaging.
+- **Contact enrichment** — [**FullEnrich**](https://fullenrich.com) retrieves email and phone (incl. telephony-sourced numbers) for those decision-makers.
+- **Rank + synthesize** — the orchestrator (**Claude Opus 4.8**) scores opportunity and drafts the argument tailored to the vendor running the scan.
+
+Claude is both the **orchestrator** and the **inference engine**; everything runs on **Cloudflare Workers** with **Cloudflare KV** as the storage and idempotent-trigger layer, on the **Flue** agent framework.
+
+```mermaid
+flowchart LR
+  Sales["Sales team<br/>front-app"] -->|"domains[] + vendor persona"| Orch
+  subgraph worker["worker-agent (Flue · Cloudflare Workers)"]
+    Orch["Orchestrator<br/>Claude Opus 4.8"]
+    Tech["techstack_prober"]
+    Scout["signal_scout"]
+    Enrich["contact_enricher"]
+    Orch --> Tech & Scout & Enrich
+  end
+  Tech --> DNS["DNS / SPF tool"]
+  Scout --> Sillage["Sillage"]
+  Enrich --> FE["FullEnrich"]
+  Orch ==>|"ranked prospects + sales use cases"| Sales
+```
+
+The agent design (topology, per-domain pipeline, context isolation, idempotency, integrations) is specified in **[AGENTS.md → What We're Building](AGENTS.md#what-were-building--agentic-gtm-intelligence)** and detailed in **[apps/worker-agent/AGENTS.md](apps/worker-agent/AGENTS.md)**.
+
+> **Status:** `apps/worker-agent` currently ships a placeholder Flue demo; the architecture above is the target the demo scaffold evolves into.
+
 ## Architecture Overview
 
 ### Monorepo Structure
