@@ -1,0 +1,25 @@
+/**
+ * Wrangler config for `worker-dns`.
+ *
+ * This Worker exposes no HTTP routes — it is called exclusively over a
+ * Workers RPC service binding (`WorkerEntrypoint`, see src/index.ts). Other
+ * Workers bind to it via `services: [{ binding: "DNS_WORKER", service:
+ * "worker-dns" }]` in their own wrangler.jsonc.
+ *
+ * Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+ *       https://developers.cloudflare.com/workers/runtime-apis/bindings/service-bindings/rpc/
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "worker-dns",
+  "account_id": "b664c6731df8a734cb99254f1991e102",
+  "compatibility_date": "2026-07-09",
+  "main": "src/index.ts",
+  "dev": {
+    "port": 8720,
+  },
+  "send_metrics": false,
+  "observability": {
+    "enabled": true,
+  },
+}

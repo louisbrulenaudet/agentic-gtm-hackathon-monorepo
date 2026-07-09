@@ -1,0 +1,33 @@
+{
+  "name": "worker-dns",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that resolves and fingerprints a domain's public DNS records (NS, MX, TXT, SPF) into a normalized tech-stack signal, exposed over Workers RPC for Agentic GTM.",
+  "type": "module",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "ci": "pnpm run lint && pnpm run format && pnpm run check-types",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "format": "oxfmt --check .",
+    "format:fix": "oxfmt .",
+    "lint": "oxlint --no-error-on-unmatched-pattern .",
+    "lint:fix": "oxlint --no-error-on-unmatched-pattern --fix .",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "types": "wrangler types -c ./wrangler.jsonc"
+  },
+  "dependencies": {
+    "@repo/dtos-common": "workspace:*",
+    "@repo/enums-common": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "vitest": "^4.1.9",
+    "wrangler": "^4.108.0"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}
